@@ -88,6 +88,10 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
             count++
             shut.text = count.toString()
         }
+
+        complete.setOnClickListener{
+            finish()
+        }
     }
 
 

@@ -11,6 +11,7 @@ import android.view.MenuItem
 import android.view.SurfaceView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.sample.edgedetection.ImageListActivity
 import com.sample.edgedetection.R
 import com.sample.edgedetection.REQUEST_CODE
 import com.sample.edgedetection.SCANNED_RESULT
@@ -95,8 +96,8 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
 
         complete.setOnClickListener{
             sp.edit().clear().apply()
-            // TODO 画像一覧画面に遷移
-            finish()
+            val intent = Intent(application, ImageListActivity::class.java)
+            startActivity(intent)
         }
     }
 

@@ -3,6 +3,7 @@ package com.sample.edgedetection.scan
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.graphics.Point
@@ -47,6 +48,7 @@ class ScanPresenter constructor(private val context: Context, private val iView:
     private var busy: Boolean = false
     private var soundSilence: MediaPlayer = MediaPlayer()
 
+
     init {
         mSurfaceHolder.addCallback(this)
         executor = Executors.newSingleThreadExecutor()
@@ -55,6 +57,7 @@ class ScanPresenter constructor(private val context: Context, private val iView:
     }
 
     fun start() {
+        println("start")
         mCamera?.startPreview() ?: Log.i(TAG, "camera null")
     }
 
@@ -170,7 +173,7 @@ class ScanPresenter constructor(private val context: Context, private val iView:
     }
 
     override fun onPictureTaken(p0: ByteArray?, p1: Camera?) {
-        Log.i(TAG, "on picture taken")
+        Log.i(TAG, "on picture takennnnnnnn")
         Observable.just(p0)
             .subscribeOn(proxySchedule)
             .subscribe {
@@ -189,13 +192,17 @@ class ScanPresenter constructor(private val context: Context, private val iView:
                 SourceManager.corners = processPicture(pic)
                 Imgproc.cvtColor(pic, pic, Imgproc.COLOR_RGB2BGRA)
                 SourceManager.pic = pic
-                (context as Activity).startActivityForResult(
-                    Intent(
-                        context,
-                        CropActivity::class.java
-                    ), REQUEST_CODE
-                )
+
+//                (context as Activity).startActivityForResult(
+//                    Intent(
+//                        context,
+//                        CropActivity::class.java
+//                    ), REQUEST_CODE
+//                )
+
                 busy = false
+
+                start()
             }
     }
 

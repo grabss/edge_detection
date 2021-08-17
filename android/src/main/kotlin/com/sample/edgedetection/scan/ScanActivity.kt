@@ -1,7 +1,9 @@
 package com.sample.edgedetection.scan
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.util.Log
 import android.view.Display
@@ -22,6 +24,8 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
 
     private val REQUEST_CAMERA_PERMISSION = 0
     private val EXIT_TIME = 2000
+//    private val sp: SharedPreferences = getSharedPreferences("SessionManage", Context.MODE_PRIVATE)
+    private var count = 0
 
     private lateinit var mPresenter: ScanPresenter
 
@@ -76,8 +80,13 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
             )
         }
 
+//        val count = sp.getInt("count", 0)
+        shut.text = count.toString()
+
         shut.setOnClickListener {
             mPresenter.shut()
+            count++
+            shut.text = count.toString()
         }
     }
 

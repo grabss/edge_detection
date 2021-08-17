@@ -12,6 +12,7 @@ import android.graphics.YuvImage
 import android.hardware.Camera
 import android.hardware.Camera.ShutterCallback
 import android.media.MediaPlayer
+import android.util.Base64
 import android.util.Log
 import android.view.SurfaceHolder
 import android.widget.Toast
@@ -34,8 +35,10 @@ import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.collections.HashSet
 
 
 class ScanPresenter constructor(private val context: Context, private val iView: IScanView.Proxy) :
@@ -47,6 +50,7 @@ class ScanPresenter constructor(private val context: Context, private val iView:
     private val proxySchedule: Scheduler
     private var busy: Boolean = false
     private var soundSilence: MediaPlayer = MediaPlayer()
+    private var sp: SharedPreferences
 
 
     init {
@@ -54,6 +58,7 @@ class ScanPresenter constructor(private val context: Context, private val iView:
         executor = Executors.newSingleThreadExecutor()
         proxySchedule = Schedulers.from(executor)
         soundSilence = MediaPlayer.create(this.context, R.raw.silence)
+        sp = context.getSharedPreferences("images", Context.MODE_PRIVATE)
     }
 
     fun start() {
@@ -193,6 +198,7 @@ class ScanPresenter constructor(private val context: Context, private val iView:
                 Imgproc.cvtColor(pic, pic, Imgproc.COLOR_RGB2BGRA)
                 SourceManager.pic = pic
 
+                // 矩形編集画面に遷移
 //                (context as Activity).startActivityForResult(
 //                    Intent(
 //                        context,
@@ -202,6 +208,20 @@ class ScanPresenter constructor(private val context: Context, private val iView:
 
                 busy = false
 
+                val current = sp.getStringSet("imageArray", null)
+                println("current size: ${current?.size}")
+
+                val editor = sp.edit()
+                // Base64形式でSharedPrefに保存
+                // 取り出す時->Base64.decode(image, Base64.DEFAULT)
+                val image = Base64.encodeToString(p0, Base64.DEFAULT)
+//                println("image: $image")
+                // 1枚目の場合はSharedPrefが空なので、空のコレクションを生成
+                val set = current ?: HashSet<String>()
+                set.add(image)
+                println("after update size: ${set.size}")
+                editor.putStringSet("imageArray", set).apply()
+//                println("set: $set")
                 start()
             }
     }

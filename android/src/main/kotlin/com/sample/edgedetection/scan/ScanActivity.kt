@@ -32,8 +32,12 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
 
     override fun provideContentViewId(): Int = R.layout.activity_scan
 
+    private lateinit var sp: SharedPreferences
+
+
     override fun initPresenter() {
         mPresenter = ScanPresenter(this, this)
+        sp = getSharedPreferences("images", Context.MODE_PRIVATE)
     }
 
     override fun prepare() {
@@ -90,6 +94,8 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
         }
 
         complete.setOnClickListener{
+            sp.edit().clear().apply()
+            // TODO 画像一覧画面に遷移
             finish()
         }
     }

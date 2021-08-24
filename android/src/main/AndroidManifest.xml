@@ -8,12 +8,10 @@
     <application
         android:allowBackup="true"
         android:requestLegacyExternalStorage="true"
+        android:screenOrientation="portrait"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme"
-        android:screenOrientation="portrait">
-        <activity
-            android:name=".ImageListActivity"
-            android:screenOrientation="portrait" />
+        android:theme="@style/AppTheme">
+        <activity android:name=".ImageListActivity" />
         <activity
             android:name=".scan.ScanActivity"
             android:label="@string/scan"

@@ -11,10 +11,7 @@ import android.view.MenuItem
 import android.view.SurfaceView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.sample.edgedetection.ImageListActivity
-import com.sample.edgedetection.R
-import com.sample.edgedetection.REQUEST_CODE
-import com.sample.edgedetection.SCANNED_RESULT
+import com.sample.edgedetection.*
 import com.sample.edgedetection.base.BaseActivity
 import com.sample.edgedetection.view.PaperRectangle
 
@@ -27,7 +24,6 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
     private val EXIT_TIME = 2000
 
     private lateinit var mPresenter: ScanPresenter
-    private lateinit var imageListAtv: ImageListActivity
 
     private lateinit var sp: SharedPreferences
 
@@ -38,9 +34,8 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
 
     override fun initPresenter() {
         mPresenter = ScanPresenter(this, this)
-        imageListAtv = ImageListActivity()
 
-        sp = getSharedPreferences("images", Context.MODE_PRIVATE)
+        sp = getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
         sp.edit().clear().apply()
     }
 

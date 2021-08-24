@@ -16,4 +16,5 @@
     <string name="done">Done</string>
     <string name="complete">完了</string>
     <string name="image_list_title">画像一覧</string>
+    <string name="upload_btn">アップロード実行</string>
 </resources>

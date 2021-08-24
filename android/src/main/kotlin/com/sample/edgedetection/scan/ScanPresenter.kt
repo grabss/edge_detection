@@ -13,9 +13,7 @@ import android.util.Base64
 import android.util.Log
 import android.view.SurfaceHolder
 import android.widget.Toast
-import com.sample.edgedetection.R
-import com.sample.edgedetection.REQUEST_CODE
-import com.sample.edgedetection.SourceManager
+import com.sample.edgedetection.*
 import com.sample.edgedetection.crop.CropActivity
 import com.sample.edgedetection.processor.Corners
 import com.sample.edgedetection.processor.processPicture
@@ -57,7 +55,7 @@ class ScanPresenter constructor(private val context: Context, private val iView:
         executor = Executors.newSingleThreadExecutor()
         proxySchedule = Schedulers.from(executor)
         soundSilence = MediaPlayer.create(this.context, R.raw.silence)
-        sp = context.getSharedPreferences("images", Context.MODE_PRIVATE)
+        sp = context.getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
     }
 
     fun start() {
@@ -259,9 +257,9 @@ class ScanPresenter constructor(private val context: Context, private val iView:
         val editor = sp.edit()
 
         if (jsons.length() == 0) {
-            editor.putString("imageArray", null)
+            editor.putString(SPKEY, null)
         } else {
-            editor.putString("imageArray", jsons.toString())
+            editor.putString(SPKEY, jsons.toString())
         }
 
         editor.putBoolean("isBusy", false)

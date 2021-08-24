@@ -6,27 +6,114 @@
     android:layout_height="match_parent"
     tools:context=".ImageListActivity">
 
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="@string/image_list_title"
+    <!-- fragment_image_list.xml -->
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/pager"
+        android:layout_width="match_parent"
+        android:layout_height="400dp"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <ImageView
-        android:id="@+id/imageView"
-        android:contentDescription="hoge"
-        android:layout_width="wrap_content"
+    <FrameLayout
+        android:id="@+id/frameLayout"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="50dp"
-        android:scaleType="fitCenter"
+        android:layout_marginTop="10dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView"
-        app:srcCompat="@drawable/img01" />
+        app:layout_constraintTop_toBottomOf="@id/pager">
+
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/indicator"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_gravity="center_horizontal"
+            app:tabBackground="@drawable/indicator_selector"
+            app:tabGravity="center"
+            app:tabIndicatorFullWidth="true"
+            app:tabIndicatorHeight="0dp"
+            app:tabRippleColor="@null" />
+    </FrameLayout>
+
+    <ImageButton
+        android:id="@+id/trash_btn"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="15dp"
+        android:background="@drawable/circle_border"
+        android:contentDescription="削除ボタン"
+        android:padding="20dp"
+        android:src="@drawable/trash_btn"
+        app:layout_constraintEnd_toStartOf="@+id/rect_btn"
+        app:layout_constraintTop_toBottomOf="@+id/frameLayout" />
+
+    <ImageButton
+        android:id="@+id/rect_btn"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="15dp"
+        android:background="@drawable/circle_border"
+        android:padding="20dp"
+        android:src="@drawable/rect_btn"
+        android:contentDescription="矩形編集ボタン"
+        app:layout_constraintEnd_toStartOf="@+id/rotate_btn"
+        app:layout_constraintTop_toBottomOf="@+id/frameLayout" />
+
+    <ImageButton
+        android:id="@+id/rotate_btn"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/circle_border"
+        android:padding="20dp"
+        android:src="@drawable/rotate_btn"
+        android:contentDescription="回転ボタン"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/frameLayout" />
+
+    <ImageButton
+        android:id="@+id/contrast_btn"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="15dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/circle_border"
+        android:padding="20dp"
+        android:src="@drawable/contrast_btn"
+        android:contentDescription="コントラストボタン"
+        app:layout_constraintStart_toEndOf="@+id/rotate_btn"
+        app:layout_constraintTop_toBottomOf="@+id/frameLayout" />
+
+    <ImageButton
+        android:id="@+id/sort_btn"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="15dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/circle_border"
+        android:padding="20dp"
+        android:src="@drawable/sort_btn"
+        android:contentDescription="ソートボタン"
+        app:layout_constraintStart_toEndOf="@+id/contrast_btn"
+        app:layout_constraintTop_toBottomOf="@+id/frameLayout" />
+
+    <Button
+        android:id="@+id/upload_btn"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:backgroundTint="@color/colorMain"
+        android:drawableLeft="@mipmap/upload_icon_foreground"
+        android:maxLines="1"
+        android:paddingHorizontal="70dp"
+        android:text="@string/upload_btn"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

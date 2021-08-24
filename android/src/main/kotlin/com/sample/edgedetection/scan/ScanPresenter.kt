@@ -5,10 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.graphics.BitmapFactory
-import android.graphics.Point
-import android.graphics.Rect
-import android.graphics.YuvImage
+import android.graphics.*
 import android.hardware.Camera
 import android.hardware.Camera.ShutterCallback
 import android.media.MediaPlayer
@@ -26,6 +23,7 @@ import io.reactivex.Observable
 import io.reactivex.Scheduler
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
+import org.json.JSONArray
 import org.opencv.android.Utils
 import org.opencv.core.Core
 import org.opencv.core.CvType
@@ -51,6 +49,7 @@ class ScanPresenter constructor(private val context: Context, private val iView:
     private var busy: Boolean = false
     private var soundSilence: MediaPlayer = MediaPlayer()
     private var sp: SharedPreferences
+    private var jsons = JSONArray()
 
 
     init {
@@ -81,6 +80,10 @@ class ScanPresenter constructor(private val context: Context, private val iView:
             mCamera?.enableShutterSound(false)
             //MediaActionSound().play(MediaActionSound.SHUTTER_CLICK)
         }
+    }
+
+    fun complete() {
+        println("completeタップ")
     }
 
     fun updateCamera() {
@@ -190,12 +193,18 @@ class ScanPresenter constructor(private val context: Context, private val iView:
                         pictureSize?.height?.toDouble() ?: 1080.toDouble()
                     ), CvType.CV_8U
                 )
+                val bitmap = BitmapFactory.decodeByteArray(p0, 0, p0!!.size)
+
+                // グレースケール処理
+                grayScale(mat, bitmap)
                 mat.put(0, 0, p0)
+
                 val pic = Imgcodecs.imdecode(mat, Imgcodecs.CV_LOAD_IMAGE_UNCHANGED)
                 Core.rotate(pic, pic, Core.ROTATE_90_CLOCKWISE)
                 mat.release()
                 SourceManager.corners = processPicture(pic)
-                Imgproc.cvtColor(pic, pic, Imgproc.COLOR_RGB2BGRA)
+                mat.release()
+
                 SourceManager.pic = pic
 
                 // 矩形編集画面に遷移
@@ -206,25 +215,59 @@ class ScanPresenter constructor(private val context: Context, private val iView:
 //                    ), REQUEST_CODE
 //                )
 
+                saveImage(bitmap)
+
                 busy = false
 
-                val current = sp.getStringSet("imageArray", null)
-                println("current size: ${current?.size}")
-
-                val editor = sp.edit()
-                // Base64形式でSharedPrefに保存
-                // 取り出す時->Base64.decode(image, Base64.DEFAULT)
-                val image = Base64.encodeToString(p0, Base64.DEFAULT)
-//                println("image: $image")
-                // 1枚目の場合はSharedPrefが空なので、空のコレクションを生成
-                val set = current ?: HashSet<String>()
-                set.add(image)
-                println("after update size: ${set.size}")
-                editor.putStringSet("imageArray", set).apply()
-//                println("set: $set")
                 start()
             }
     }
+
+    private fun grayScale(mat: Mat, bm: Bitmap) {
+        Utils.bitmapToMat(bm, mat)
+        Imgproc.cvtColor(mat, mat, Imgproc.COLOR_RGB2GRAY)
+
+        // 記事ではこの記述も必要と書かれているが、クラッシュする
+//        Imgproc.cvtColor(mat, mat, Imgproc.COLOR_GRAY2RGBA, 4)
+        Utils.matToBitmap(mat, bm)
+    }
+
+    private fun saveImage(bm: Bitmap) {
+        // 画像を回転
+        val matrix = Matrix()
+        matrix.postRotate(90F)
+        val rotatedBm = Bitmap.createBitmap(
+            bm,
+            0,
+            0,
+            bm.width,
+            bm.height,
+            matrix,
+            true
+        )
+
+        val baos = ByteArrayOutputStream()
+        rotatedBm.compress(Bitmap.CompressFormat.JPEG, 100, baos)
+        val b = baos.toByteArray()
+        // Base64形式でSharedPrefに保存
+        // 取り出す時->Base64.decode(image, Base64.DEFAULT)
+        val image = Base64.encodeToString(b, Base64.DEFAULT)
+
+        // 画像の配列に追加
+        jsons.put(image)
+
+        val editor = sp.edit()
+
+        if (jsons.length() == 0) {
+            editor.putString("imageArray", null)
+        } else {
+            editor.putString("imageArray", jsons.toString())
+        }
+
+        editor.putBoolean("isBusy", false)
+        editor.apply()
+    }
+
 
 
     override fun onPreviewFrame(p0: ByteArray?, p1: Camera?) {

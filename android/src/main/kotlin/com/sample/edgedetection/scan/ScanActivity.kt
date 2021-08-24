@@ -25,20 +25,23 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
 
     private val REQUEST_CAMERA_PERMISSION = 0
     private val EXIT_TIME = 2000
-//    private val sp: SharedPreferences = getSharedPreferences("SessionManage", Context.MODE_PRIVATE)
-    private var count = 0
 
     private lateinit var mPresenter: ScanPresenter
+    private lateinit var imageListAtv: ImageListActivity
+
+    private lateinit var sp: SharedPreferences
+
+    private var count = 0
 
 
     override fun provideContentViewId(): Int = R.layout.activity_scan
 
-    private lateinit var sp: SharedPreferences
-
-
     override fun initPresenter() {
         mPresenter = ScanPresenter(this, this)
+        imageListAtv = ImageListActivity()
+
         sp = getSharedPreferences("images", Context.MODE_PRIVATE)
+        sp.edit().clear().apply()
     }
 
     override fun prepare() {
@@ -85,19 +88,22 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
             )
         }
 
-//        val count = sp.getInt("count", 0)
-        shut.text = count.toString()
-
         shut.setOnClickListener {
-            mPresenter.shut()
-            count++
-            shut.text = count.toString()
+            val isBusy = sp.getBoolean("isBusy", false)
+            if(!isBusy) {
+                mPresenter.shut()
+                count++
+                shut.text = count.toString()
+            }
         }
 
         complete.setOnClickListener{
-            sp.edit().clear().apply()
-            val intent = Intent(application, ImageListActivity::class.java)
-            startActivity(intent)
+            val isBusy = sp.getBoolean("isBusy", false)
+            if (!isBusy) {
+                mPresenter.complete()
+                val intent = Intent(application, ImageListActivity::class.java)
+                startActivity(intent)
+            }
         }
     }
 
@@ -164,6 +170,7 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
     override fun getPaperRect(): PaperRectangle = paper_rect
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        println("=====onActivityResult=====")
         if (requestCode == REQUEST_CODE) {
             if (resultCode == Activity.RESULT_OK) {
                 if (null != data && null != data.extras) {

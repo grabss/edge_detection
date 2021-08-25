@@ -69,6 +69,8 @@ class ScanPresenter constructor(private val context: Context, private val iView:
 
     fun shut() {
         busy = true
+        val editor = sp.edit()
+        editor.putBoolean("isBusy", true).apply()
         Log.i(TAG, "try to focus")
         mCamera?.autoFocus { b, _ ->
             Log.i(TAG, "focus result: " + b)
@@ -76,7 +78,7 @@ class ScanPresenter constructor(private val context: Context, private val iView:
                 soundSilence.start()
             }, null, this)
             mCamera?.enableShutterSound(false)
-            //MediaActionSound().play(MediaActionSound.SHUTTER_CLICK)
+            //MeいdiaActionSound().play(MediaActionSound.SHUTTER_CLICK)
         }
     }
 
@@ -245,7 +247,7 @@ class ScanPresenter constructor(private val context: Context, private val iView:
         )
 
         val baos = ByteArrayOutputStream()
-        rotatedBm.compress(Bitmap.CompressFormat.JPEG, 100, baos)
+        rotatedBm.compress(Bitmap.CompressFormat.JPEG, 50, baos)
         val b = baos.toByteArray()
         // Base64形式でSharedPrefに保存
         // 取り出す時->Base64.decode(image, Base64.DEFAULT)

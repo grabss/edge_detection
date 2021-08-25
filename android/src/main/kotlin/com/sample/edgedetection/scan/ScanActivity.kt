@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.util.Base64
 import android.util.Log
 import android.view.Display
 import android.view.MenuItem
@@ -16,6 +17,7 @@ import com.sample.edgedetection.base.BaseActivity
 import com.sample.edgedetection.view.PaperRectangle
 
 import kotlinx.android.synthetic.main.activity_scan.*
+import org.json.JSONArray
 import org.opencv.android.OpenCVLoader
 
 class ScanActivity : BaseActivity(), IScanView.Proxy {
@@ -97,7 +99,7 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
             if (!isBusy) {
                 mPresenter.complete()
                 val intent = Intent(application, ImageListActivity::class.java)
-                startActivity(intent)
+                startActivityForResult(intent, REQUEST_CODE)
             }
         }
     }

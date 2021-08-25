@@ -1,26 +1,32 @@
 package com.sample.edgedetection
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.util.Base64
 import com.sample.edgedetection.scan.ScanActivity
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.PluginRegistry
+import org.json.JSONArray
 
 class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultListener {
 
     private var activity: Activity = activity
-    private var result: MethodChannel.Result? = null
+    var result: MethodChannel.Result? = null
     private var methodCall: MethodCall? = null
 
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
-
         if (requestCode == REQUEST_CODE) {
             if (resultCode == Activity.RESULT_OK) {
                 if (null != data && null != data.extras) {
-                    val filePath = data.extras!!.getString(SCANNED_RESULT)
-                    finishWithSuccess(filePath)
+                    val sp = activity.getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
+                    val images: String? = sp.getString(SPKEY,null)
+                    finishWithSuccess(images)
+
+                    // 本来はString型で単体画像ファイルのパスを渡していた
+//                    val filePath = data.extras!!.getString(SCANNED_RESULT)
                 }
             } else if (resultCode == Activity.RESULT_CANCELED) {
                 finishWithSuccess(null)
@@ -64,8 +70,16 @@ class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultL
         clearMethodCallAndResult()
     }
 
-    private fun finishWithSuccess(imagePath: String?) {
-        result?.success(imagePath)
+    private fun finishWithSuccess(images: String?) {
+        val a = JSONArray(images)
+        val byteList = ArrayList<ByteArray>()
+        for (i in 0 until a.length()) {
+            val imageBytes = Base64.decode(a.optString(i), Base64.DEFAULT)
+            byteList.add(imageBytes)
+        }
+
+        // FlutterにArray<ByteArray>型でデータを渡す
+        result?.success(byteList)
         clearMethodCallAndResult()
     }
 
@@ -73,5 +87,6 @@ class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultL
         methodCall = null
         result = null
     }
+
 
 }

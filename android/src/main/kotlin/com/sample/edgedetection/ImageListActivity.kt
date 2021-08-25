@@ -1,6 +1,9 @@
 package com.sample.edgedetection
 
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
@@ -13,10 +16,13 @@ import org.json.JSONArray
 class ImageListActivity : FragmentActivity() {
 
     private lateinit var viewPager: ViewPager2
+    private lateinit var sp: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_image_list)
+
+        sp = getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
 
         val imageCount = getImageCount()
 
@@ -31,7 +37,6 @@ class ImageListActivity : FragmentActivity() {
     }
 
     private fun getImageCount(): Int {
-        val sp = getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
         val images: String? = sp.getString(SPKEY, null)
         return if (images != null) {
             val a = JSONArray(images)
@@ -47,7 +52,14 @@ class ImageListActivity : FragmentActivity() {
         rotate_btn.setOnClickListener { println("tapped rotate_btn") }
         contrast_btn.setOnClickListener { println("tapped contrast_btn") }
         sort_btn.setOnClickListener { println("tapped sort_btn") }
-        upload_btn.setOnClickListener { println("tapped upload_btn") }
+        upload_btn.setOnClickListener { upload() }
+    }
+
+    private fun upload() {
+        // String型で何らかの値を渡す必要がある
+        setResult(Activity.RESULT_OK, Intent().putExtra(SCANNED_RESULT, "dummy"))
+        System.gc()
+        finish()
     }
 
 

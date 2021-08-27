@@ -18,6 +18,11 @@ class ImageListActivity : FragmentActivity() {
     private lateinit var viewPager: ViewPager2
     private lateinit var sp: SharedPreferences
 
+
+    companion object {
+        const val EXTRA_DATA = "EXTRA_DATA"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_image_list)
@@ -56,8 +61,12 @@ class ImageListActivity : FragmentActivity() {
     }
 
     private fun upload() {
-        // String型で何らかの値を渡す必要がある
-        setResult(Activity.RESULT_OK, Intent().putExtra(SCANNED_RESULT, "dummy"))
+        val intent = Intent().apply {
+            // String型で何らかの値を渡す必要がある
+            putExtra(SCANNED_RESULT, "dummy")
+            putExtra(EXTRA_DATA, "ここに行って欲しい")
+        }
+        setResult(RESULT_OK, intent)
         System.gc()
         finish()
     }

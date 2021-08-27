@@ -71,10 +71,10 @@ class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultL
     }
 
     private fun finishWithSuccess(images: String?) {
-        val a = JSONArray(images)
+        val jsons = JSONArray(images)
         val byteList = ArrayList<ByteArray>()
-        for (i in 0 until a.length()) {
-            val imageBytes = Base64.decode(a.optString(i), Base64.DEFAULT)
+        for (i in 0 until jsons.length()) {
+            val imageBytes = Base64.decode(jsons.optString(i), Base64.DEFAULT)
             byteList.add(imageBytes)
         }
 

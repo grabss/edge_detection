@@ -1,8 +1,6 @@
 package com.sample.edgedetection.scan
 
-import android.app.Activity
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.*
@@ -14,7 +12,6 @@ import android.util.Log
 import android.view.SurfaceHolder
 import android.widget.Toast
 import com.sample.edgedetection.*
-import com.sample.edgedetection.crop.CropActivity
 import com.sample.edgedetection.processor.Corners
 import com.sample.edgedetection.processor.processPicture
 import io.reactivex.Observable
@@ -31,10 +28,8 @@ import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
 import java.io.ByteArrayOutputStream
 import java.io.IOException
-import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import kotlin.collections.HashSet
 
 
 class ScanPresenter constructor(private val context: Context, private val iView: IScanView.Proxy) :
@@ -44,10 +39,11 @@ class ScanPresenter constructor(private val context: Context, private val iView:
     private val mSurfaceHolder: SurfaceHolder = iView.getSurfaceView().holder
     private val executor: ExecutorService
     private val proxySchedule: Scheduler
-    private var busy: Boolean = false
+    private var isBusy: Boolean = false
     private var soundSilence: MediaPlayer = MediaPlayer()
     private var sp: SharedPreferences
     private var jsons = JSONArray()
+    private var matrix: Matrix
 
 
     init {
@@ -56,6 +52,8 @@ class ScanPresenter constructor(private val context: Context, private val iView:
         proxySchedule = Schedulers.from(executor)
         soundSilence = MediaPlayer.create(this.context, R.raw.silence)
         sp = context.getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
+        matrix = Matrix()
+        matrix.postRotate(90F)
     }
 
     fun start() {
@@ -68,7 +66,7 @@ class ScanPresenter constructor(private val context: Context, private val iView:
     }
 
     fun shut() {
-        busy = true
+        isBusy = true
         val editor = sp.edit()
         editor.putBoolean("isBusy", true).apply()
         Log.i(TAG, "try to focus")
@@ -163,6 +161,15 @@ class ScanPresenter constructor(private val context: Context, private val iView:
         mCamera?.setDisplayOrientation(90)
     }
 
+    // SharedPrefに画像がある場合、変数に初期値として代入
+    fun initJsonArray() {
+        Log.i(TAG, "initJsonArray")
+        val images = sp.getString(SPKEY, null)
+        if (images != null) {
+            jsons = JSONArray(images)
+        }
+    }
+
     override fun surfaceCreated(p0: SurfaceHolder) {
         initCamera()
     }
@@ -217,7 +224,7 @@ class ScanPresenter constructor(private val context: Context, private val iView:
 
                 saveImage(bitmap)
 
-                busy = false
+                isBusy = false
 
                 start()
             }
@@ -234,8 +241,6 @@ class ScanPresenter constructor(private val context: Context, private val iView:
 
     private fun saveImage(bm: Bitmap) {
         // 画像を回転
-        val matrix = Matrix()
-        matrix.postRotate(90F)
         val rotatedBm = Bitmap.createBitmap(
             bm,
             0,
@@ -271,11 +276,11 @@ class ScanPresenter constructor(private val context: Context, private val iView:
 
 
     override fun onPreviewFrame(p0: ByteArray?, p1: Camera?) {
-        if (busy) {
+        if (isBusy) {
             return
         }
-        Log.i(TAG, "on process start")
-        busy = true
+//        Log.i(TAG, "on process start")
+        isBusy = true
         try {
             Observable.just(p0)
                 .observeOn(proxySchedule)
@@ -306,7 +311,7 @@ class ScanPresenter constructor(private val context: Context, private val iView:
 
                     Observable.create<Corners> {
                         val corner = processPicture(img)
-                        busy = false
+                        isBusy = false
                         if (null != corner && corner.corners.size == 4) {
                             it.onNext(corner)
                         } else {

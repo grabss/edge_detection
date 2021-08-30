@@ -1,10 +1,13 @@
 package com.sample.edgedetection
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.view.animation.RotateAnimation
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
@@ -12,12 +15,15 @@ import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.android.synthetic.main.activity_image_list.*
 import org.json.JSONArray
+import java.lang.Exception
+
+const val INDEX = "INDEX"
 
 class ImageListActivity : FragmentActivity() {
 
     private lateinit var viewPager: ViewPager2
     private lateinit var sp: SharedPreferences
-
+    private lateinit var pagerAdapter: ImageListPagerAdapter
 
     companion object {
         const val EXTRA_DATA = "EXTRA_DATA"
@@ -29,38 +35,72 @@ class ImageListActivity : FragmentActivity() {
 
         sp = getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
 
-        val imageCount = getImageCount()
+        val images: String? = sp.getString(SPKEY, null)
+        val jsons = JSONArray(images)
 
-        val pagerAdapter = ImageListPagerAdapter(this, imageCount)
+        pagerAdapter = ImageListPagerAdapter(this, jsons)
 
-        viewPager = findViewById(R.id.pager)
+        // 編集画面からインデックスを取得
+        val index = intent.getIntExtra(INDEX, 0)
+
+        viewPager = pager
         viewPager.adapter = pagerAdapter
+        viewPager.post {
+            viewPager.setCurrentItem(index, true)
+        }
 
         setListener()
 
         TabLayoutMediator(indicator, viewPager) { _, _ -> }.attach()
     }
 
-    private fun getImageCount(): Int {
-        val images: String? = sp.getString(SPKEY, null)
-        return if (images != null) {
-            val a = JSONArray(images)
-            a.length()
-        } else {
-            0
+    private fun setListener() {
+        trash_btn.setOnClickListener {
+            showAlertDlg()
+        }
+        rect_btn.setOnClickListener { println("tapped rect_btn") }
+        rotate_btn.setOnClickListener {
+            navToRotateScrn()
+        }
+        contrast_btn.setOnClickListener { println("tapped contrast_btn") }
+        sort_btn.setOnClickListener { println("tapped sort_btn") }
+        upload_btn.setOnClickListener {
+            upload()
         }
     }
 
-    private fun setListener() {
-        trash_btn.setOnClickListener { println("tapped trash_btn") }
-        rect_btn.setOnClickListener { println("tapped rect_btn") }
-        rotate_btn.setOnClickListener { println("tapped rotate_btn") }
-        contrast_btn.setOnClickListener { println("tapped contrast_btn") }
-        sort_btn.setOnClickListener { println("tapped sort_btn") }
-        upload_btn.setOnClickListener { upload() }
+    private fun showAlertDlg() {
+        AlertDialog.Builder(this)
+            .setTitle("削除してよろしいですか")
+            .setPositiveButton("はい") { _, _ ->
+                println("tapped yes btn")
+                val images: String? = sp.getString(SPKEY, null)
+                var jsons = JSONArray(images)
+                val index = viewPager.currentItem
+                jsons.remove(index)
+                pagerAdapter.removeImage(jsons)
+                viewPager.post {
+                    viewPager.setCurrentItem(index - 1, true)
+                }
+            }
+            .setNegativeButton("キャンセル") { _, _ ->
+                println("tapped cancel btn")
+            }
+            .show()
     }
 
+    // finish()で画像一覧画面をスタックから除外しないとエラー発生。
+    // 画像をスタックに積んだままの遷移はNG。
+    private fun navToRotateScrn() {
+        val intent = Intent(this, RotateActivity::class.java)
+        intent.putExtra(INDEX, viewPager.currentItem)
+        startActivity(intent)
+        finish()
+    }
+
+    // アップロード実行。Flutterに2次元配列のbyte配列を渡す
     private fun upload() {
+
         val intent = Intent().apply {
             // String型で何らかの値を渡す必要がある
             putExtra(SCANNED_RESULT, "dummy")
@@ -71,18 +111,44 @@ class ImageListActivity : FragmentActivity() {
         finish()
     }
 
-
-
-    private inner class ImageListPagerAdapter(fa: FragmentActivity, imageCount: Int) : FragmentStateAdapter(fa) {
+    private inner class ImageListPagerAdapter(fa: FragmentActivity, jsons: JSONArray) : FragmentStateAdapter(fa) {
         val sp = getSharedPreferences(SPNAME, Context.MODE_PRIVATE)!!
-        val images: String? = sp.getString(SPKEY, null)
-        val imageCount = imageCount
+        var jsons = jsons
 
-        override fun getItemCount(): Int = imageCount
-
-        override fun createFragment(position: Int): Fragment {
-            return ImageListFragment.newInstance(JSONArray(images).optString(position))
+        private fun getPageIds(): Array<Long> {
+            return Array(jsons.length()) { i -> jsons.optString(i).hashCode().toLong() }
         }
 
+        // 要素数
+        override fun getItemCount(): Int = jsons.length()
+
+        // base64形式の画像を引数で渡す
+        override fun createFragment(position: Int): Fragment {
+            return ImageListFragment.newInstance(jsons.optString(position))
+        }
+
+        override fun getItemId(position: Int): Long {
+            return jsons[position].hashCode().toLong()
+        }
+
+        override fun containsItem(itemId: Long): Boolean {
+            val pageIds = getPageIds()
+            return pageIds.contains(itemId)
+        }
+
+        // 画像削除
+        fun removeImage(newImages: JSONArray) {
+            try {
+                // 2回notifyDataSetChanged()を実行しないと、pager部分でエラーになる
+                jsons = JSONArray()
+                notifyDataSetChanged()
+                jsons = newImages
+                notifyDataSetChanged()
+            } catch(e: Exception) {
+                print(e)
+            }
+            val editor = sp.edit()
+            editor.putString(SPKEY, jsons.toString()).apply()
+        }
     }
 }

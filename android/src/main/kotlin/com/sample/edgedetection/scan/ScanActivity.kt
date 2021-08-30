@@ -104,18 +104,40 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
         }
     }
 
+    private fun saveImage(image: String) {
+        val jsons = JSONArray()
+        jsons.put(image)
+        val editor = sp.edit()
+        editor.putString(SPKEY, jsons.toString()).apply()
+    }
 
+    // 撮影済み画像枚数取得
+    private fun getImageCount(): Int {
+        val images: String? = sp.getString(SPKEY, null)
+        return if (images == null) {
+            0
+        } else {
+            JSONArray(images).length()
+        }
+    }
+
+    // 初回カメラ起動時、画像一覧画面から戻ってきた場合にのみ呼ばれる
     override fun onStart() {
+        println("onStart")
         super.onStart()
+        shut.text = count.toString()
+        mPresenter.initJsonArray()
         mPresenter.start()
     }
 
     override fun onStop() {
+        println("onStop")
         super.onStop()
         mPresenter.stop()
     }
 
     override fun exit() {
+        println("exit")
         finish()
     }
 

@@ -7,4 +7,5 @@
     <color name="colorWhite">#FFFFFF</color>
     <color name="colorLightGray">#AAAAAA</color>
     <color name="colorMain">#4284E4</color>
+    <color name="colorCancelBtnBackground">#98A9B0</color>
 </resources>

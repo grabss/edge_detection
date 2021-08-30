@@ -100,7 +100,11 @@ class ImageListActivity : FragmentActivity() {
 
     // アップロード実行。Flutterに2次元配列のbyte配列を渡す
     private fun upload() {
-
+        val images: String? = sp.getString(SPKEY, null)
+        var jsons = JSONArray(images)
+        if (jsons.length() == 0) {
+            return
+        }
         val intent = Intent().apply {
             // String型で何らかの値を渡す必要がある
             putExtra(SCANNED_RESULT, "dummy")

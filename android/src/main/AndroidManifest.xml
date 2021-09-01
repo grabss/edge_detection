@@ -11,7 +11,9 @@
         android:screenOrientation="portrait"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".RotateActivity"></activity>
+        <activity android:name=".SortActivity"></activity>
+        <activity android:name=".ContrastActivity" />
+        <activity android:name=".RotateActivity" />
         <activity android:name=".ImageListActivity" />
         <activity
             android:name=".scan.ScanActivity"

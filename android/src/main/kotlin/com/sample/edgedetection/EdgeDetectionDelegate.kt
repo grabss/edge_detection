@@ -18,9 +18,13 @@ class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultL
 
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
+        println("=====onActivityResult3=====")
         if (requestCode == REQUEST_CODE) {
+            println("=====onActivityResult4=====")
             if (resultCode == Activity.RESULT_OK) {
+                println("=====onActivityResult5=====")
                 if (null != data && null != data.extras) {
+                    println("=====onActivityResult6=====")
                     val sp = activity.getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
                     val images: String? = sp.getString(SPKEY,null)
                     finishWithSuccess(images)
@@ -71,6 +75,7 @@ class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultL
     }
 
     private fun finishWithSuccess(images: String?) {
+        println("finishWithSuccess")
         val jsons = JSONArray(images)
         val byteList = ArrayList<ByteArray>()
         for (i in 0 until jsons.length()) {

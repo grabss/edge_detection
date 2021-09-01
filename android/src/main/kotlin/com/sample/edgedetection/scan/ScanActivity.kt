@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.Looper
 import android.util.Base64
 import android.util.Log
 import android.view.Display
@@ -35,7 +37,7 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
     override fun provideContentViewId(): Int = R.layout.activity_scan
 
     override fun initPresenter() {
-        mPresenter = ScanPresenter(this, this)
+        mPresenter = ScanPresenter(this, this, this)
 
         sp = getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
         sp.edit().clear().apply()
@@ -86,21 +88,41 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
         }
 
         shut.setOnClickListener {
-            val isBusy = sp.getBoolean("isBusy", false)
-            if(!isBusy) {
-                mPresenter.shut()
-                count++
-                shut.text = count.toString()
-            }
+            toDisableBtns()
+            mPresenter.shut()
         }
 
         complete.setOnClickListener{
-            val isBusy = sp.getBoolean("isBusy", false)
-            if (!isBusy) {
-                mPresenter.complete()
-                val intent = Intent(application, ImageListActivity::class.java)
-                startActivityForResult(intent, REQUEST_CODE)
-            }
+            toDisableBtns()
+            mPresenter.complete()
+            val intent = Intent(application, ImageListActivity::class.java)
+            startActivityForResult(intent, REQUEST_CODE)
+        }
+    }
+
+    private fun adjustBtnsState() {
+        if(count == 0) {
+            complete.isEnabled = false
+        }
+    }
+
+    private fun toDisableBtns() {
+        shut.isEnabled = false
+        complete.isEnabled = false
+    }
+
+    private fun toEnableBtns() {
+        shut.isEnabled = true
+        complete.isEnabled = true
+    }
+
+    fun updateCount() {
+        count++
+
+        // UI更新をメインスレッドで行うための記述
+        Handler(Looper.getMainLooper()).post  {
+            shut.text = count.toString()
+            toEnableBtns()
         }
     }
 
@@ -125,7 +147,10 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
     override fun onStart() {
         println("onStart")
         super.onStart()
+        count = getImageCount()
         shut.text = count.toString()
+        toEnableBtns()
+        adjustBtnsState()
         mPresenter.initJsonArray()
         mPresenter.start()
     }
@@ -193,6 +218,7 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
         if (requestCode == REQUEST_CODE) {
             if (resultCode == Activity.RESULT_OK) {
                 if (null != data && null != data.extras) {
+                    println("=====onActivityResult2=====")
                     val path = data.extras!!.getString(SCANNED_RESULT)
                     setResult(Activity.RESULT_OK, Intent().putExtra(SCANNED_RESULT, path))
                     finish()

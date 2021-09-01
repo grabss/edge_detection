@@ -62,7 +62,9 @@ class ImageListActivity : FragmentActivity() {
         rotate_btn.setOnClickListener {
             navToRotateScrn()
         }
-        contrast_btn.setOnClickListener { println("tapped contrast_btn") }
+        contrast_btn.setOnClickListener {
+            navToContrastScrn()
+        }
         sort_btn.setOnClickListener { println("tapped sort_btn") }
         upload_btn.setOnClickListener {
             upload()
@@ -98,6 +100,13 @@ class ImageListActivity : FragmentActivity() {
         finish()
     }
 
+    private fun navToContrastScrn() {
+        val intent = Intent(this, ContrastActivity::class.java)
+        intent.putExtra(INDEX, viewPager.currentItem)
+        startActivity(intent)
+        finish()
+    }
+
     // アップロード実行。Flutterに2次元配列のbyte配列を渡す
     private fun upload() {
         val images: String? = sp.getString(SPKEY, null)
@@ -110,6 +119,7 @@ class ImageListActivity : FragmentActivity() {
             putExtra(SCANNED_RESULT, "dummy")
             putExtra(EXTRA_DATA, "ここに行って欲しい")
         }
+
         setResult(RESULT_OK, intent)
         System.gc()
         finish()

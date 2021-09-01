@@ -19,4 +19,5 @@
     <string name="rotate">回転</string>
     <string name="cancel">キャンセル</string>
     <string name="decision">決定</string>
+    <string name="contrast">コントラスト</string>
 </resources>

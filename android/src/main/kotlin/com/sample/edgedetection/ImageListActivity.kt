@@ -1,13 +1,10 @@
 package com.sample.edgedetection
 
-import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
-import android.view.animation.RotateAnimation
-import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
@@ -35,7 +32,10 @@ class ImageListActivity : FragmentActivity() {
 
         sp = getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
 
-        val images: String? = sp.getString(SPKEY, null)
+        val editor = sp.edit()
+        editor.putBoolean(DO_UPLOAD, false).apply()
+
+        val images: String? = sp.getString(IMAGE_ARRAY, null)
         val jsons = JSONArray(images)
 
         pagerAdapter = ImageListPagerAdapter(this, jsons)
@@ -76,7 +76,7 @@ class ImageListActivity : FragmentActivity() {
             .setTitle("削除してよろしいですか")
             .setPositiveButton("はい") { _, _ ->
                 println("tapped yes btn")
-                val images: String? = sp.getString(SPKEY, null)
+                val images: String? = sp.getString(IMAGE_ARRAY, null)
                 var jsons = JSONArray(images)
                 val index = viewPager.currentItem
                 jsons.remove(index)
@@ -109,11 +109,14 @@ class ImageListActivity : FragmentActivity() {
 
     // アップロード実行。Flutterに2次元配列のbyte配列を渡す
     private fun upload() {
-        val images: String? = sp.getString(SPKEY, null)
+        val images: String? = sp.getString(IMAGE_ARRAY, null)
         var jsons = JSONArray(images)
         if (jsons.length() == 0) {
             return
         }
+        upload_btn.isEnabled = false
+        val editor = sp.edit()
+        editor.putBoolean(DO_UPLOAD, true).apply()
         val intent = Intent().apply {
             // String型で何らかの値を渡す必要がある
             putExtra(SCANNED_RESULT, "dummy")
@@ -162,7 +165,7 @@ class ImageListActivity : FragmentActivity() {
                 print(e)
             }
             val editor = sp.edit()
-            editor.putString(SPKEY, jsons.toString()).apply()
+            editor.putString(IMAGE_ARRAY, jsons.toString()).apply()
         }
     }
 }

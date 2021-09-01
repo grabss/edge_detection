@@ -7,7 +7,6 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
-import android.util.Base64
 import android.util.Log
 import android.view.Display
 import android.view.MenuItem
@@ -130,12 +129,12 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
         val jsons = JSONArray()
         jsons.put(image)
         val editor = sp.edit()
-        editor.putString(SPKEY, jsons.toString()).apply()
+        editor.putString(IMAGE_ARRAY, jsons.toString()).apply()
     }
 
     // 撮影済み画像枚数取得
     private fun getImageCount(): Int {
-        val images: String? = sp.getString(SPKEY, null)
+        val images: String? = sp.getString(IMAGE_ARRAY, null)
         return if (images == null) {
             0
         } else {
@@ -215,16 +214,18 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         println("=====onActivityResult=====")
-        if (requestCode == REQUEST_CODE) {
-            if (resultCode == Activity.RESULT_OK) {
-                if (null != data && null != data.extras) {
-                    println("=====onActivityResult2=====")
-                    val path = data.extras!!.getString(SCANNED_RESULT)
-                    setResult(Activity.RESULT_OK, Intent().putExtra(SCANNED_RESULT, path))
-                    finish()
-                }
-            }
+        val doUpload = sp.getBoolean(DO_UPLOAD, false)
+        if (doUpload) {
+            setResult(Activity.RESULT_OK, Intent().putExtra(SCANNED_RESULT, "any"))
+            finish()
         }
+//        if (resultCode == Activity.RESULT_OK) {
+//            if (null != data && null != data.extras) {
+//                println("=====onActivityResult2=====")
+//                setResult(Activity.RESULT_OK, Intent().putExtra(SCANNED_RESULT, "any"))
+//                finish()
+//            }
+//        }
         super.onActivityResult(requestCode, resultCode, data)
     }
 

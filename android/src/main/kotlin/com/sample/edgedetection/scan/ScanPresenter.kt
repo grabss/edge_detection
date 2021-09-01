@@ -162,7 +162,7 @@ class ScanPresenter constructor(private val context: Context, private val iView:
     // SharedPrefに画像がある場合、変数に初期値として代入
     fun initJsonArray() {
         Log.i(TAG, "initJsonArray")
-        val images = sp.getString(SPKEY, null)
+        val images = sp.getString(IMAGE_ARRAY, null)
         if (images != null) {
             jsons = JSONArray(images)
         }
@@ -262,9 +262,9 @@ class ScanPresenter constructor(private val context: Context, private val iView:
         val editor = sp.edit()
 
         if (jsons.length() == 0) {
-            editor.putString(SPKEY, null)
+            editor.putString(IMAGE_ARRAY, null)
         } else {
-            editor.putString(SPKEY, jsons.toString())
+            editor.putString(IMAGE_ARRAY, jsons.toString())
         }
 
         scanActv.updateCount()

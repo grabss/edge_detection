@@ -26,7 +26,7 @@ class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultL
                 if (null != data && null != data.extras) {
                     println("=====onActivityResult6=====")
                     val sp = activity.getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
-                    val images: String? = sp.getString(SPKEY,null)
+                    val images: String? = sp.getString(IMAGE_ARRAY,null)
                     finishWithSuccess(images)
 
                     // 本来はString型で単体画像ファイルのパスを渡していた

@@ -5,7 +5,8 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 
 const val SPNAME = "images"
-const val SPKEY = "imageArray"
+const val IMAGE_ARRAY = "imageArray"
+const val DO_UPLOAD = "doUpload"
 
 class MainActivity : AppCompatActivity() {
 

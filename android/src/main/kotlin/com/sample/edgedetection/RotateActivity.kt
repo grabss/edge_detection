@@ -33,7 +33,7 @@ class RotateActivity : AppCompatActivity() {
         // タップされた画像のインデックスを取得
         index = intent.getIntExtra(INDEX, 0)
 
-        val images = sp.getString(SPKEY, null)
+        val images = sp.getString(IMAGE_ARRAY, null)
         jsons = JSONArray(images)
         val b64Image = jsons[index] as String
         val imageBytes = Base64.decode(b64Image, Base64.DEFAULT)
@@ -74,7 +74,7 @@ class RotateActivity : AppCompatActivity() {
         val updatedImg = Base64.encodeToString(b, Base64.DEFAULT)
         jsons.put(index, updatedImg)
         val editor = sp.edit()
-        editor.putString(SPKEY, jsons.toString()).apply()
+        editor.putString(IMAGE_ARRAY, jsons.toString()).apply()
     }
 
     private fun navToImageListScrn() {

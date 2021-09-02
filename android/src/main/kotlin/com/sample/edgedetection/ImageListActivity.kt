@@ -33,7 +33,7 @@ class ImageListActivity : FragmentActivity() {
         sp = getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
 
         val editor = sp.edit()
-        editor.putBoolean(DO_UPLOAD, false).apply()
+        editor.putBoolean(SHOULD_UPLOAD, false).apply()
 
         val images: String? = sp.getString(IMAGE_ARRAY, null)
         val jsons = JSONArray(images)
@@ -116,7 +116,7 @@ class ImageListActivity : FragmentActivity() {
         }
         upload_btn.isEnabled = false
         val editor = sp.edit()
-        editor.putBoolean(DO_UPLOAD, true).apply()
+        editor.putBoolean(SHOULD_UPLOAD, true).apply()
         val intent = Intent().apply {
             // String型で何らかの値を渡す必要がある
             putExtra(SCANNED_RESULT, "dummy")

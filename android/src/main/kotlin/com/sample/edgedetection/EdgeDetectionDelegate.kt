@@ -15,7 +15,7 @@ class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultL
     private var activity: Activity = activity
     var result: MethodChannel.Result? = null
     private var methodCall: MethodCall? = null
-
+    private val sp = activity.getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         println("=====onActivityResult3=====")
@@ -25,7 +25,6 @@ class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultL
                 println("=====onActivityResult5=====")
                 if (null != data && null != data.extras) {
                     println("=====onActivityResult6=====")
-                    val sp = activity.getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
                     val images: String? = sp.getString(IMAGE_ARRAY,null)
                     finishWithSuccess(images)
 
@@ -33,7 +32,12 @@ class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultL
 //                    val filePath = data.extras!!.getString(SCANNED_RESULT)
                 }
             } else if (resultCode == Activity.RESULT_CANCELED) {
-                finishWithSuccess(null)
+                println("RESULT_CANCEL")
+                clearMethodCallAndResult()
+                val shouldUpload = sp.getBoolean(SHOULD_UPLOAD, false)
+                if (shouldUpload) {
+                    finishWithSuccess(null)
+                }
             }
             return true
         }

@@ -214,8 +214,8 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         println("=====onActivityResult=====")
-        val doUpload = sp.getBoolean(DO_UPLOAD, false)
-        if (doUpload) {
+        val shouldUpload = sp.getBoolean(SHOULD_UPLOAD, false)
+        if (shouldUpload) {
             setResult(Activity.RESULT_OK, Intent().putExtra(SCANNED_RESULT, "any"))
             finish()
         }

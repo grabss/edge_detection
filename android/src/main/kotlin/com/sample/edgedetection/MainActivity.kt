@@ -6,7 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 
 const val SPNAME = "images"
 const val IMAGE_ARRAY = "imageArray"
-const val DO_UPLOAD = "doUpload"
+const val SHOULD_UPLOAD = "shouldUpload"
 
 class MainActivity : AppCompatActivity() {
 

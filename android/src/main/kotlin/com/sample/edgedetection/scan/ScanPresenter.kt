@@ -11,14 +11,15 @@ import android.util.Base64
 import android.util.Log
 import android.view.SurfaceHolder
 import android.widget.Toast
+import com.google.gson.Gson
 import com.sample.edgedetection.*
+import com.sample.edgedetection.model.Image
 import com.sample.edgedetection.processor.Corners
 import com.sample.edgedetection.processor.processPicture
 import io.reactivex.Observable
 import io.reactivex.Scheduler
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
-import org.json.JSONArray
 import org.opencv.android.Utils
 import org.opencv.core.Core
 import org.opencv.core.CvType
@@ -42,8 +43,9 @@ class ScanPresenter constructor(private val context: Context, private val iView:
     private var isBusy: Boolean = false
     private var soundSilence: MediaPlayer = MediaPlayer()
     private var sp: SharedPreferences
-    private var jsons = JSONArray()
+    var images = mutableListOf<Image>()
     private var matrix: Matrix
+    private val gson = Gson()
 
 
     init {
@@ -54,6 +56,15 @@ class ScanPresenter constructor(private val context: Context, private val iView:
         sp = context.getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
         matrix = Matrix()
         matrix.postRotate(90F)
+    }
+
+    // SharedPrefに画像がある場合、変数に初期値として代入
+    fun initImageArray() {
+        Log.i(TAG, "initImageArray")
+        val json = sp.getString(IMAGE_ARRAY, null)
+        if (json != null) {
+            images = jsonToImageArray(json)
+        }
     }
 
     fun start() {
@@ -76,10 +87,6 @@ class ScanPresenter constructor(private val context: Context, private val iView:
             mCamera?.enableShutterSound(false)
             //MeいdiaActionSound().play(MediaActionSound.SHUTTER_CLICK)
         }
-    }
-
-    fun complete() {
-        println("completeタップ")
     }
 
     fun updateCamera() {
@@ -159,15 +166,6 @@ class ScanPresenter constructor(private val context: Context, private val iView:
         mCamera?.setDisplayOrientation(90)
     }
 
-    // SharedPrefに画像がある場合、変数に初期値として代入
-    fun initJsonArray() {
-        Log.i(TAG, "initJsonArray")
-        val images = sp.getString(IMAGE_ARRAY, null)
-        if (images != null) {
-            jsons = JSONArray(images)
-        }
-    }
-
     override fun surfaceCreated(p0: SurfaceHolder) {
         initCamera()
     }
@@ -186,7 +184,7 @@ class ScanPresenter constructor(private val context: Context, private val iView:
     }
 
     override fun onPictureTaken(p0: ByteArray?, p1: Camera?) {
-        Log.i(TAG, "on picture takennnnnnnn")
+        Log.i(TAG, "on picture taken")
         Observable.just(p0)
             .subscribeOn(proxySchedule)
             .subscribe {
@@ -221,9 +219,7 @@ class ScanPresenter constructor(private val context: Context, private val iView:
 //                )
 
                 saveImage(bitmap)
-
                 isBusy = false
-
                 start()
             }
     }
@@ -254,21 +250,17 @@ class ScanPresenter constructor(private val context: Context, private val iView:
         val b = baos.toByteArray()
         // Base64形式でSharedPrefに保存
         // 取り出す時->Base64.decode(image, Base64.DEFAULT)
-        val image = Base64.encodeToString(b, Base64.DEFAULT)
+        val b64 = Base64.encodeToString(b, Base64.DEFAULT)
+        val image = Image(b64)
 
         // 画像の配列に追加
-        jsons.put(image)
+        images.add(image)
+        val json = gson.toJson(images)
 
         val editor = sp.edit()
-
-        if (jsons.length() == 0) {
-            editor.putString(IMAGE_ARRAY, null)
-        } else {
-            editor.putString(IMAGE_ARRAY, jsons.toString())
-        }
+        editor.putString(IMAGE_ARRAY, json).apply()
 
         scanActv.updateCount()
-        editor.apply()
     }
 
 

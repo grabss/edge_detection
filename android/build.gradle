@@ -48,4 +48,5 @@ dependencies {
     api 'com.github.davidmigloz:opencv-android-gradle-repo:3.3.0'
     implementation 'com.google.android.material:material:1.4.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'com.google.code.gson:gson:2.8.8'
 }

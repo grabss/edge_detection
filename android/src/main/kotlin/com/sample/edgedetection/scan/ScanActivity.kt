@@ -32,7 +32,6 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
 
     private var count = 0
 
-
     override fun provideContentViewId(): Int = R.layout.activity_scan
 
     override fun initPresenter() {
@@ -93,7 +92,6 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
 
         complete.setOnClickListener{
             toDisableBtns()
-            mPresenter.complete()
             val intent = Intent(application, ImageListActivity::class.java)
             startActivityForResult(intent, REQUEST_CODE)
         }
@@ -116,7 +114,7 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
     }
 
     fun updateCount() {
-        count++
+        count = getImageCount()
 
         // UI更新をメインスレッドで行うための記述
         Handler(Looper.getMainLooper()).post  {
@@ -125,22 +123,23 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
         }
     }
 
-    private fun saveImage(image: String) {
-        val jsons = JSONArray()
-        jsons.put(image)
-        val editor = sp.edit()
-        editor.putString(IMAGE_ARRAY, jsons.toString()).apply()
-    }
-
     // 撮影済み画像枚数取得
     private fun getImageCount(): Int {
-        val images: String? = sp.getString(IMAGE_ARRAY, null)
-        return if (images == null) {
+        val json = sp.getString(IMAGE_ARRAY, null)
+        return if (json == null) {
             0
         } else {
-            JSONArray(images).length()
+            val images = jsonToImageArray(json)
+            images.size
         }
     }
+
+//    private fun saveImage(image: String) {
+//        val jsons = JSONArray()
+//        jsons.put(image)
+//        val editor = sp.edit()
+//        editor.putString(IMAGE_ARRAY, jsons.toString()).apply()
+//    }
 
     // 初回カメラ起動時、画像一覧画面から戻ってきた場合にのみ呼ばれる
     override fun onStart() {
@@ -150,7 +149,7 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
         shut.text = count.toString()
         toEnableBtns()
         adjustBtnsState()
-        mPresenter.initJsonArray()
+        mPresenter.initImageArray()
         mPresenter.start()
     }
 

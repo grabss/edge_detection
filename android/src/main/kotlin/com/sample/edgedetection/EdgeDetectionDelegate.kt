@@ -25,8 +25,8 @@ class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultL
                 println("=====onActivityResult5=====")
                 if (null != data && null != data.extras) {
                     println("=====onActivityResult6=====")
-                    val images: String? = sp.getString(IMAGE_ARRAY,null)
-                    finishWithSuccess(images)
+                    val json: String? = sp.getString(IMAGE_ARRAY,null)
+                    finishWithSuccess(json)
 
                     // 本来はString型で単体画像ファイルのパスを渡していた
 //                    val filePath = data.extras!!.getString(SCANNED_RESULT)
@@ -78,12 +78,12 @@ class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultL
         clearMethodCallAndResult()
     }
 
-    private fun finishWithSuccess(images: String?) {
+    private fun finishWithSuccess(json: String?) {
         println("finishWithSuccess")
-        val jsons = JSONArray(images)
         val byteList = ArrayList<ByteArray>()
-        for (i in 0 until jsons.length()) {
-            val imageBytes = Base64.decode(jsons.optString(i), Base64.DEFAULT)
+        val images = jsonToImageArray(json!!)
+        for (image in images) {
+            val imageBytes = Base64.decode(image.b64, Base64.DEFAULT)
             byteList.add(imageBytes)
         }
 

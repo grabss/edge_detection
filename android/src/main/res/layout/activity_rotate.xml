@@ -31,7 +31,7 @@
     <LinearLayout
         android:id="@+id/linearLayout"
         android:layout_width="fill_parent"
-        android:layout_height="80dp"
+        android:layout_height="60dp"
         android:orientation="horizontal"
         android:weightSum="1"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -40,9 +40,10 @@
         <Button
             android:id="@+id/cancelBtn"
             android:layout_width="0dip"
-            android:layout_height="80dp"
+            android:layout_height="60dp"
             android:layout_weight=".5"
             android:backgroundTint="@color/colorCancelBtnBackground"
+            android:background="@color/colorCancelBtnBackground"
             android:text="@string/cancel"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
@@ -50,9 +51,10 @@
         <Button
             android:id="@+id/decisionBtn"
             android:layout_width="0dip"
-            android:layout_height="80dp"
+            android:layout_height="60dp"
             android:layout_weight=".5"
             android:backgroundTint="@color/colorMain"
+            android:background="@color/colorMain"
             android:text="@string/decision"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent" />

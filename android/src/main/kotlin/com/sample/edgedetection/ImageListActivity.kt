@@ -66,7 +66,9 @@ class ImageListActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener 
         contrast_btn.setOnClickListener {
             navToContrastScrn()
         }
-        sort_btn.setOnClickListener { println("tapped sort_btn") }
+        sort_btn.setOnClickListener {
+            navToSortScrn()
+        }
         upload_btn.setOnClickListener {
             upload()
         }
@@ -92,6 +94,13 @@ class ImageListActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener 
 
     private fun navToContrastScrn() {
         val intent = Intent(this, ContrastActivity::class.java)
+        intent.putExtra(INDEX, viewPager.currentItem)
+        startActivity(intent)
+        finish()
+    }
+
+    private fun navToSortScrn() {
+        val intent = Intent(this, SortActivity::class.java)
         intent.putExtra(INDEX, viewPager.currentItem)
         startActivity(intent)
         finish()

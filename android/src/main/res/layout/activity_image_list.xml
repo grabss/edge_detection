@@ -107,6 +107,7 @@
         android:layout_width="match_parent"
         android:layout_height="60dp"
         android:backgroundTint="@color/colorMain"
+        android:background="@color/colorMain"
         android:drawableLeft="@mipmap/upload_icon_foreground"
         android:maxLines="1"
         android:paddingHorizontal="70dp"

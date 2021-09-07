@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <TextView
+        android:id="@+id/index"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:text="0"
+        android:gravity="center_horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/gridImg"
+        android:layout_width="200dp"
+        android:layout_height="130dp"
+        android:layout_marginTop="5dp"
+        android:adjustViewBounds="true"
+        android:background="@color/colorPrimary"
+        android:backgroundTint="#000000"
+        android:scaleType="fitCenter"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/index"
+        tools:srcCompat="@tools:sample/avatars" />
+
+    <!-- 削除ボタン -->
+    <ImageButton
+        android:id="@+id/trashBtn"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:alpha="0.7"
+        android:background="@drawable/circle_border"
+        android:backgroundTint="@color/colorWhite"
+        android:contentDescription="削除ボタン"
+        android:padding="3dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/trash_btn"
+        android:tint="@color/colorAccent"
+        app:layout_constraintBottom_toTopOf="@+id/gridImg"
+        app:layout_constraintEnd_toEndOf="@id/gridImg"
+        app:layout_constraintStart_toEndOf="@id/gridImg"
+        app:layout_constraintTop_toTopOf="@id/gridImg" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

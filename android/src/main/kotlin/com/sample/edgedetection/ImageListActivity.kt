@@ -18,12 +18,13 @@ import java.lang.Exception
 
 const val INDEX = "INDEX"
 
-class ImageListActivity : FragmentActivity() {
+class ImageListActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
 
     private lateinit var viewPager: ViewPager2
     private lateinit var sp: SharedPreferences
     private lateinit var pagerAdapter: ImageListPagerAdapter
     private lateinit var images: ArrayList<Image>
+    private val dialog = ConfirmDialogFragment()
 
     companion object {
         const val EXTRA_DATA = "EXTRA_DATA"
@@ -36,7 +37,7 @@ class ImageListActivity : FragmentActivity() {
         sp = getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
 
         val json = sp.getString(IMAGE_ARRAY, null)
-        val images = jsonToImageArray(json!!)
+        images = jsonToImageArray(json!!)
 
         pagerAdapter = ImageListPagerAdapter(this, images)
 
@@ -56,7 +57,7 @@ class ImageListActivity : FragmentActivity() {
 
     private fun setBtnListener() {
         trash_btn.setOnClickListener {
-            showAlertDlg()
+            dialog.show(supportFragmentManager, "TAG")
         }
         rect_btn.setOnClickListener { println("tapped rect_btn") }
         rotate_btn.setOnClickListener {
@@ -78,27 +79,6 @@ class ImageListActivity : FragmentActivity() {
         contrast_btn.isEnabled = false
         sort_btn.isEnabled = false
         upload_btn.isEnabled = false
-    }
-
-    private fun showAlertDlg() {
-        AlertDialog.Builder(this)
-            .setTitle("削除してよろしいですか")
-            .setPositiveButton("はい") { _, _ ->
-                println("tapped yes btn")
-                val index = viewPager.currentItem
-                images.removeAt(index)
-                pagerAdapter.updateData(images)
-                viewPager.post {
-                    viewPager.setCurrentItem(index - 1, true)
-                }
-                if (images.isEmpty()) {
-                    toDisableBtns()
-                }
-            }
-            .setNegativeButton("キャンセル") { _, _ ->
-                println("tapped cancel btn")
-            }
-            .show()
     }
 
     // finish()で画像一覧画面をスタックから除外しないとエラー発生。
@@ -133,6 +113,22 @@ class ImageListActivity : FragmentActivity() {
         setResult(RESULT_OK, intent)
         System.gc()
         finish()
+    }
+
+    override fun onDecisionClick() {
+        val index = viewPager.currentItem
+        images.removeAt(index)
+        pagerAdapter.updateData(images)
+        viewPager.post {
+            viewPager.setCurrentItem(index, true)
+        }
+        if (images.isEmpty()) {
+            toDisableBtns()
+        }
+    }
+
+    // ダイアログのキャンセルボタンタップ時に処理を加える場合はここに記述
+    override fun onCancelClick() {
     }
 
     private inner class ImageListPagerAdapter(fa: FragmentActivity, images: ArrayList<Image>) : FragmentStateAdapter(fa) {

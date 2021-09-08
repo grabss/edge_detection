@@ -32,6 +32,7 @@
             android:layout_gravity="center_horizontal"
             app:tabBackground="@drawable/indicator_selector"
             app:tabGravity="center"
+            app:tabIndicatorGravity="center"
             app:tabIndicatorFullWidth="true"
             app:tabIndicatorHeight="0dp"
             app:tabRippleColor="@null" />

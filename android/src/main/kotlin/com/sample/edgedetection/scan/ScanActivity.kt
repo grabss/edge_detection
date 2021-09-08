@@ -94,6 +94,8 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
             toDisableBtns()
             val intent = Intent(application, ImageListActivity::class.java)
             startActivityForResult(intent, REQUEST_CODE)
+            val editor = sp.edit()
+            editor.putBoolean(CAN_EDIT_IMAGES, true).apply()
         }
     }
 
@@ -133,13 +135,6 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
             images.size
         }
     }
-
-//    private fun saveImage(image: String) {
-//        val jsons = JSONArray()
-//        jsons.put(image)
-//        val editor = sp.edit()
-//        editor.putString(IMAGE_ARRAY, jsons.toString()).apply()
-//    }
 
     // 初回カメラ起動時、画像一覧画面から戻ってきた場合にのみ呼ばれる
     override fun onStart() {
@@ -218,13 +213,6 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
             setResult(Activity.RESULT_OK, Intent().putExtra(SCANNED_RESULT, "any"))
             finish()
         }
-//        if (resultCode == Activity.RESULT_OK) {
-//            if (null != data && null != data.extras) {
-//                println("=====onActivityResult2=====")
-//                setResult(Activity.RESULT_OK, Intent().putExtra(SCANNED_RESULT, "any"))
-//                finish()
-//            }
-//        }
         super.onActivityResult(requestCode, resultCode, data)
     }
 

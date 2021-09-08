@@ -6,6 +6,8 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Base64
 import android.view.LayoutInflater
 import android.view.View
@@ -33,32 +35,45 @@ class ImageListActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener 
     private lateinit var images: ArrayList<Image>
     private val dialog = ConfirmDialogFragment()
     private var index = 0
+    private val handler = Handler(Looper.getMainLooper())
 
     companion object {
         const val EXTRA_DATA = "EXTRA_DATA"
     }
 
+    private val result = object: Runnable {
+        override fun run() {
+            val result = sp.getBoolean(CAN_EDIT_IMAGES, false)
+            if (result) {
+                val json = sp.getString(IMAGE_ARRAY, null)
+                images = jsonToImageArray(json!!)
+
+                pagerAdapter = ImageListPagerAdapter(images)
+
+                // 編集画面からインデックスを取得
+                index = intent.getIntExtra(INDEX, 0)
+
+                viewPager = pager
+                viewPager.adapter = pagerAdapter
+                viewPager.setCurrentItem(index, false)
+                TabLayoutMediator(indicator, viewPager) { _, _ -> }.attach()
+                toEnableBtns()
+                return
+            } else {
+                handler.postDelayed(this, 200)
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_image_list)
-
         sp = getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
 
-        val json = sp.getString(IMAGE_ARRAY, null)
-        images = jsonToImageArray(json!!)
-
-        pagerAdapter = ImageListPagerAdapter(images)
-
-        // 編集画面からインデックスを取得
-       index = intent.getIntExtra(INDEX, 0)
-
-        viewPager = pager
-        viewPager.adapter = pagerAdapter
-        viewPager.setCurrentItem(index, false)
-
+        // ギャラリーから選択した画像の加工処理が終わっているかを200ミリ秒毎に確認
+        handler.post(result)
+        toDisableBtns()
         setBtnListener()
-
-        TabLayoutMediator(indicator, viewPager) { _, _ -> }.attach()
     }
 
     private fun setBtnListener() {
@@ -78,6 +93,15 @@ class ImageListActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener 
         upload_btn.setOnClickListener {
             upload()
         }
+    }
+
+    private fun toEnableBtns() {
+        trash_btn.isEnabled = true
+        rect_btn.isEnabled = true
+        rotate_btn.isEnabled = true
+        contrast_btn.isEnabled = true
+        sort_btn.isEnabled = true
+        upload_btn.isEnabled = true
     }
 
     private fun toDisableBtns() {

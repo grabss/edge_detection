@@ -21,7 +21,7 @@ class ConfirmDialogFragment : DialogFragment() {
         try {
             listener = context as BtnListener
         } catch (e: ClassCastException) {
-            throw ClassCastException(("$context must implement NoticeDialogListener"))
+            throw ClassCastException(("$context must implement BtnListener"))
         }
     }
 

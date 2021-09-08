@@ -196,7 +196,11 @@ class ScanPresenter constructor(private val context: Context, private val iView:
                         pictureSize?.height?.toDouble() ?: 1080.toDouble()
                     ), CvType.CV_8U
                 )
-                val bitmap = BitmapFactory.decodeByteArray(p0, 0, p0!!.size)
+                var bitmap = BitmapFactory.decodeByteArray(p0, 0, p0!!.size)
+                // リサイズ
+                val matrix = Matrix()
+                matrix.postScale(0.5f, 0.5f)
+                bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
 
                 // グレースケール処理
                 grayScale(mat, bitmap)

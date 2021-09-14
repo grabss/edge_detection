@@ -89,10 +89,18 @@ class ContrastActivity : AppCompatActivity() {
 
             // 値変更時に呼ばれる
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                val value = 200 - progress
-                // contrastの有効範囲は0..2
-                // デフォルトは1
-                contrast = value/100F
+                thread {
+                    val value = 200 - progress
+                    // contrastの有効範囲は0..2
+                    // デフォルトは1
+                    contrast = value/100F
+                    currentVal = contrast
+                }
+                imageView.setImageBitmap(
+                    decodedImg.setContrast(
+                        contrast
+                    )
+                )
             }
 
             // つまみタッチ時に呼ばれる
@@ -103,12 +111,6 @@ class ContrastActivity : AppCompatActivity() {
             // つまみリリース時に呼ばれる
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
                 println("リリース")
-                currentVal = contrast
-                imageView.setImageBitmap(
-                    decodedImg.setContrast(
-                        contrast
-                    )
-                )
             }
         })
     }

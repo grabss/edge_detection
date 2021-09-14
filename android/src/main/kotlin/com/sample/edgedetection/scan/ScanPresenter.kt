@@ -79,14 +79,11 @@ class ScanPresenter constructor(private val context: Context, private val iView:
     fun shut() {
         isBusy = true
         Log.i(TAG, "try to focus")
-        mCamera?.autoFocus { b, _ ->
-            Log.i(TAG, "focus result: " + b)
-            mCamera?.takePicture(ShutterCallback {
-                soundSilence.start()
-            }, null, this)
-            mCamera?.enableShutterSound(false)
-            //MeいdiaActionSound().play(MediaActionSound.SHUTTER_CLICK)
-        }
+        mCamera?.takePicture(ShutterCallback {
+            soundSilence.start()
+        }, null, this)
+        mCamera?.enableShutterSound(false)
+        //MediaActionSound().play(MediaActionSound.SHUTTER_CLICK)
     }
 
     fun updateCamera() {

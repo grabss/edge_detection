@@ -37,6 +37,11 @@ class ContrastActivity : AppCompatActivity() {
         setSlider()
     }
 
+    override fun onBackPressed() {
+        toDisableBtns()
+        navToImageListScrn()
+    }
+
     private fun setImage() {
         // タップされた画像のインデックスを取得
         index = intent.getIntExtra(INDEX, 0)

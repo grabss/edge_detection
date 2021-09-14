@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.*
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Base64
 import android.util.DisplayMetrics
@@ -25,7 +24,6 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
 import com.sample.edgedetection.model.Image
-import kotlinx.android.synthetic.main.activity_rotate.*
 import kotlinx.android.synthetic.main.activity_rotate.cancelBtn
 import kotlinx.android.synthetic.main.activity_rotate.decisionBtn
 import kotlinx.android.synthetic.main.activity_sort.*
@@ -53,6 +51,11 @@ class SortActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
         grid.layoutManager = GridLayoutManager(this, 3, RecyclerView.VERTICAL, false)
         setBtnListener()
         windowManager.defaultDisplay.getRealMetrics(dm)
+    }
+
+    override fun onBackPressed() {
+        toDisableBtns()
+        navToImageListScrn()
     }
 
     private fun setGridView() {
@@ -215,12 +218,12 @@ class SortActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
 
     private fun setBtnListener() {
         cancelBtn.setOnClickListener {
-            disableBtns()
+            toDisableBtns()
             navToImageListScrn()
         }
 
         decisionBtn.setOnClickListener {
-            disableBtns()
+            toDisableBtns()
             index = 0
             thread {
                 // SharedPrefの値を更新
@@ -234,7 +237,7 @@ class SortActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
         decisionBtn.isEnabled = false
     }
 
-    private fun disableBtns() {
+    private fun toDisableBtns() {
         cancelBtn.isEnabled = false
         decisionBtn.isEnabled = false
     }

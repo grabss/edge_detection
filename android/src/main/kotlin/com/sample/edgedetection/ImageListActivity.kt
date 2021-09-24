@@ -20,6 +20,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayoutMediator
 import com.google.gson.Gson
+import com.sample.edgedetection.crop.CropActivity
 import com.sample.edgedetection.model.Image
 import kotlinx.android.synthetic.main.activity_image_list.*
 import org.json.JSONArray
@@ -78,41 +79,50 @@ class ImageListActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener 
     }
 
     private fun setBtnListener() {
-        trash_btn.setOnClickListener {
+        trashBtn.setOnClickListener {
             dialog.show(supportFragmentManager, "TAG")
         }
-        rect_btn.setOnClickListener { println("tapped rect_btn") }
-        rotate_btn.setOnClickListener {
+        cropBtn.setOnClickListener {
+            navToCropScrn()
+        }
+        rotateBtn.setOnClickListener {
             navToRotateScrn()
         }
-        contrast_btn.setOnClickListener {
+        contrastBtn.setOnClickListener {
             navToContrastScrn()
         }
-        sort_btn.setOnClickListener {
+        sortBtn.setOnClickListener {
             navToSortScrn()
         }
-        upload_btn.setOnClickListener {
+        uploadBtn.setOnClickListener {
             upload()
         }
         toDisableBtns()
     }
 
     private fun toEnableBtns() {
-        trash_btn.isEnabled = true
-        rect_btn.isEnabled = true
-        rotate_btn.isEnabled = true
-        contrast_btn.isEnabled = true
-        sort_btn.isEnabled = true
-        upload_btn.isEnabled = true
+        trashBtn.isEnabled = true
+        cropBtn.isEnabled = true
+        rotateBtn.isEnabled = true
+        contrastBtn.isEnabled = true
+        sortBtn.isEnabled = true
+        uploadBtn.isEnabled = true
     }
 
     private fun toDisableBtns() {
-        trash_btn.isEnabled = false
-        rect_btn.isEnabled = false
-        rotate_btn.isEnabled = false
-        contrast_btn.isEnabled = false
-        sort_btn.isEnabled = false
-        upload_btn.isEnabled = false
+        trashBtn.isEnabled = false
+        cropBtn.isEnabled = false
+        rotateBtn.isEnabled = false
+        contrastBtn.isEnabled = false
+        sortBtn.isEnabled = false
+        uploadBtn.isEnabled = false
+    }
+
+    private fun navToCropScrn() {
+        val intent = Intent(this, CropActivity::class.java)
+        intent.putExtra(INDEX, viewPager.currentItem)
+        startActivity(intent)
+        finish()
     }
 
     // finish()で画像一覧画面をスタックから除外しないとエラー発生。
@@ -143,7 +153,7 @@ class ImageListActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener 
         if (images.isEmpty()) {
             return
         }
-        upload_btn.isEnabled = false
+        uploadBtn.isEnabled = false
         val editor = sp.edit()
         editor.putBoolean(SHOULD_UPLOAD, true).apply()
         val intent = Intent().apply {

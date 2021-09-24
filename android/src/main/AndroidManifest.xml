@@ -10,17 +10,23 @@
         android:requestLegacyExternalStorage="true"
         android:screenOrientation="portrait"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
-        <activity android:name=".SortActivity"></activity>
-        <activity android:name=".ContrastActivity" />
-        <activity android:name=".RotateActivity" />
-        <activity android:name=".ImageListActivity" />
+        android:theme="@style/Theme.AppCompat.NoActionBar">
+        <activity android:name=".SortActivity"
+            android:screenOrientation="portrait" />
+        <activity android:name=".ContrastActivity"
+            android:screenOrientation="portrait" />
+        <activity android:name=".RotateActivity"
+            android:screenOrientation="portrait" />
+        <activity android:name=".ImageListActivity"
+            android:screenOrientation="portrait" />
         <activity
             android:name=".scan.ScanActivity"
+            android:screenOrientation="portrait"
             android:label="@string/scan"
             android:launchMode="singleTask" />
         <activity
             android:name=".crop.CropActivity"
+            android:screenOrientation="portrait"
             android:label="@string/crop"
             android:launchMode="singleTask" />
     </application>

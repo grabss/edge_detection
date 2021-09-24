@@ -1,14 +1,18 @@
 package com.sample.edgedetection.crop
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.util.Base64
 import android.util.Log
+import com.google.gson.Gson
+import com.sample.edgedetection.IMAGE_ARRAY
+import com.sample.edgedetection.SPNAME
+import com.sample.edgedetection.jsonToImageArray
 import com.sample.edgedetection.model.Image
 import com.sample.edgedetection.processor.Corners
 import com.sample.edgedetection.processor.TAG
 import com.sample.edgedetection.processor.cropPicture
-import com.sample.edgedetection.scan.ScanActivity
 import com.sample.edgedetection.scan.ScanPresenter
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -22,13 +26,15 @@ class BeforehandCropPresenter(val context: Context, private val corners: Corners
     private var picture: Mat
     private var croppedPicture: Mat? = null
     private var croppedBitmap: Bitmap? = null
+    private var sp: SharedPreferences = context.getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
+    private val gson = Gson()
 
     init {
         println("init BeforehandCropPresenter")
         picture = mat
     }
 
-    fun cropAndSave(image: Image, mainActv: MainActivity? = null, scanPre: ScanPresenter? = null) {
+    fun cropAndSave(image: Image, scanPre: ScanPresenter? = null) {
 
         if (picture == null) {
             Log.i(TAG, "picture null?")
@@ -55,8 +61,19 @@ class BeforehandCropPresenter(val context: Context, private val corners: Corners
                 val b = baos.toByteArray()
                 val updatedB64 = Base64.encodeToString(b, Base64.DEFAULT)
                 val croppedImg = image.copy(b64 = updatedB64)
-                mainActv?.saveImage(croppedImg)
+                saveImage(croppedImg)
                 scanPre?.addImageToList(croppedImg)
             }
+    }
+
+    private fun saveImage(image: Image) {
+        var images = mutableListOf<Image>()
+        val json = sp.getString(IMAGE_ARRAY, null)
+        if (json != null) {
+            images = jsonToImageArray(json)
+        }
+        images.add(image)
+        val editor = sp.edit()
+        editor.putString(IMAGE_ARRAY, gson.toJson(images)).apply()
     }
 }

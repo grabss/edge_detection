@@ -10,7 +10,7 @@
         android:requestLegacyExternalStorage="true"
         android:screenOrientation="portrait"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.NoActionBar">
+        android:theme="@style/AppTheme">
         <activity android:name=".SortActivity"
             android:screenOrientation="portrait" />
         <activity android:name=".ContrastActivity"

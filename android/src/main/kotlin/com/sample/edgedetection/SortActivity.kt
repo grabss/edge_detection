@@ -63,7 +63,7 @@ class SortActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
     private fun setGridView() {
         val json = sp.getString(IMAGE_ARRAY, null)
         if (json != null) {
-            val images = jsonToImageArray(json)
+            images = jsonToImageArray(json)
             for(image in images) {
                 val imageBytes = Base64.decode(image.b64, Base64.DEFAULT)
                 val decodedImg = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)

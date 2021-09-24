@@ -11,20 +11,19 @@ import android.view.View
 import com.sample.edgedetection.SourceManager
 import com.sample.edgedetection.processor.Corners
 import com.sample.edgedetection.processor.TAG
+import com.sample.edgedetection.processor.convertDpToPx
 import org.opencv.core.Point
 import org.opencv.core.Size
-
 
 class PaperRectangle : View {
     constructor(context: Context) : super(context)
     constructor(context: Context, attributes: AttributeSet) : super(context, attributes)
-    constructor(context: Context, attributes: AttributeSet, defTheme: Int) : super(
-        context,
-        attributes,
-        defTheme
-    )
+    constructor(context: Context, attributes: AttributeSet, defTheme: Int) : super(context, attributes, defTheme)
 
     private val rectPaint = Paint()
+    private val rectPaintOnCamera = Paint()
+    private val fillRectPaint = Paint()
+    private val clearPaint = Paint()
     private val circlePaint = Paint()
     private var ratioX: Double = 1.0
     private var ratioY: Double = 1.0
@@ -37,33 +36,65 @@ class PaperRectangle : View {
     private var cropMode = false
     private var latestDownX = 0.0F
     private var latestDownY = 0.0F
+    private val offset = 1F
 
     init {
-        rectPaint.color = Color.WHITE
-        rectPaint.isAntiAlias = true
-        rectPaint.isDither = true
-        rectPaint.strokeWidth = 6F
-        rectPaint.style = Paint.Style.STROKE
-        rectPaint.strokeJoin = Paint.Join.ROUND    // set the join to round you want
-        rectPaint.strokeCap = Paint.Cap.ROUND      // set the paint cap to round too
-        rectPaint.pathEffect = CornerPathEffect(10f)
 
-        circlePaint.color = Color.LTGRAY
-        circlePaint.isDither = true
-        circlePaint.isAntiAlias = true
-        circlePaint.strokeWidth = 4F
-        circlePaint.style = Paint.Style.STROKE
+        println("init")
+
+        clearPaint.apply {
+            xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
+        }
+
+        rectPaint.apply {
+            color = Color.WHITE
+            isAntiAlias = true
+            isDither = true
+            strokeWidth = 2F
+            style = Paint.Style.STROKE
+            strokeJoin = Paint.Join.ROUND    // set the join to round you want
+            strokeCap = Paint.Cap.ROUND      // set the paint cap to round too
+            pathEffect = CornerPathEffect(0f)
+        }
+
+        rectPaintOnCamera.apply {
+            color = Color.parseColor("#4284E4")
+            isAntiAlias = true
+            isDither = true
+            strokeWidth = 6F
+            style = Paint.Style.STROKE
+            strokeJoin = Paint.Join.ROUND    // set the join to round you want
+            strokeCap = Paint.Cap.ROUND      // set the paint cap to round too
+            pathEffect = CornerPathEffect(0f)
+        }
+
+        fillRectPaint.apply {
+            style = Paint.Style.FILL
+            color = Color.parseColor("#4D4284E4")
+        }
+
+        circlePaint.apply {
+            color = Color.WHITE
+            isDither = true
+            isAntiAlias = true
+            strokeWidth = 2F
+            style = Paint.Style.STROKE
+        }
     }
 
     fun onCornersDetected(corners: Corners) {
         ratioX = corners.size.width.div(measuredWidth)
+//        println("ratioX: $ratioX")
+//        println("measuredWidth: $measuredWidth")
         ratioY = corners.size.height.div(measuredHeight)
+//        println("ratioY: $ratioY")
+//        println("measuredHeight: $measuredHeight")
         tl = corners.corners[0] ?: Point()
         tr = corners.corners[1] ?: Point()
         br = corners.corners[2] ?: Point()
         bl = corners.corners[3] ?: Point()
 
-        Log.i(TAG, "POINTS ------>  $tl corners")
+//        Log.i(TAG, "POINTS ------>  ${tl.toString()} corners")
 
         resize()
         path.reset()
@@ -80,20 +111,41 @@ class PaperRectangle : View {
         invalidate()
     }
 
-    fun onCorners2Crop(corners: Corners?, size: Size?) {
-
+    fun onCorners2Crop(corners: Corners?, size: Size?, picWidth: Int, picHeight: Int) {
+        println("onCorners2Crop")
+        println("corners: $corners")
+        println("size: $size")
         cropMode = true
-        tl = corners?.corners?.get(0) ?: SourceManager.defaultTl
-        tr = corners?.corners?.get(1) ?: SourceManager.defaultTr
-        br = corners?.corners?.get(2) ?: SourceManager.defaultBr
-        bl = corners?.corners?.get(3) ?: SourceManager.defaultBl
+        tl = corners?.corners?.get(0) ?: Point(size?.width?.times(0.05) ?: 0.0, size?.height?.times(0.05) ?: 0.0)
+        println("tl: $tl")
+        tr = corners?.corners?.get(1) ?: Point(size?.width?.times(0.95) ?: 0.0, size?.height?.times(0.05) ?: 0.0)
+        println("tr: $tr")
+        br = corners?.corners?.get(2) ?: Point(size?.width?.times(0.95) ?: 0.0, size?.height?.times(0.95) ?: 0.0)
+        println("br: $br")
+        bl = corners?.corners?.get(3) ?: Point(size?.width?.times(0.05) ?: 0.0, size?.height?.times(0.95) ?: 0.0)
+        println("bl: $bl")
+
+
         val displayMetrics = DisplayMetrics()
         (context as Activity).windowManager.defaultDisplay.getMetrics(displayMetrics)
         //exclude status bar height
         val statusBarHeight = getStatusBarHeight(context)
-        val navigationBarHeight = getNavigationBarHeight(context)
-        ratioX = size?.width?.div(displayMetrics.widthPixels) ?: 1.0
-        ratioY = size?.height?.div(displayMetrics.heightPixels - statusBarHeight - navigationBarHeight) ?: 1.0
+        println("statusBarHeight: $statusBarHeight")
+//        val hoge = (context as Activity).findViewById<ImageView>(R.id.paper)
+//        println("hoge: ${hoge.width}")
+//        ratioX = size?.width?.div(displayMetrics.widthPixels) ?: 1.0
+        ratioX = size?.width?.div(picWidth) ?: 1.0
+        println("ratioX: $ratioX")
+        val titleHeight = convertDpToPx(40f, context).toInt()
+        val footerHeight = convertDpToPx(60f, context).toInt()
+//        ratioY = size?.height?.div(displayMetrics.heightPixels - statusBarHeight - footerHeight - titleHeight) ?: 1.0
+        ratioY = size?.height?.div(picHeight) ?: 1.0
+        println("ratioY: $ratioY")
+        println("picWidth: $picWidth")
+        println("picHeight: $picHeight")
+        println("displayMetrics.widthPixels: ${displayMetrics.widthPixels}")
+        println("displayMetrics.heightPixels: ${displayMetrics.heightPixels}")
+        println("displayMetrics.heightPixels2: ${displayMetrics.heightPixels - statusBarHeight - footerHeight - titleHeight}")
         resize()
         movePoints()
     }
@@ -103,14 +155,28 @@ class PaperRectangle : View {
         return listOf(tl, tr, br, bl)
     }
 
+
+
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
-        canvas?.drawPath(path, rectPaint)
+        println("onDraw")
+        println("canvas height: ${canvas?.height}")
+        println("canvas width: ${canvas?.width}")
         if (cropMode) {
+            canvas?.drawColor(Color.argb(200, 0, 0,0))
+
+            // 外枠
+            canvas?.drawRect(offset, offset,canvas?.width.minus(offset),canvas?.height.minus(offset), rectPaint)
+            println("path: $path")
+            canvas?.drawPath(path, clearPaint)
+            canvas?.drawPath(path, rectPaint)
             canvas?.drawCircle(tl.x.toFloat(), tl.y.toFloat(), 20F, circlePaint)
             canvas?.drawCircle(tr.x.toFloat(), tr.y.toFloat(), 20F, circlePaint)
             canvas?.drawCircle(bl.x.toFloat(), bl.y.toFloat(), 20F, circlePaint)
             canvas?.drawCircle(br.x.toFloat(), br.y.toFloat(), 20F, circlePaint)
+        } else {
+            canvas?.drawPath(path, rectPaintOnCamera)
+            canvas?.drawPath(path, fillRectPaint)
         }
     }
 
@@ -119,6 +185,7 @@ class PaperRectangle : View {
         if (!cropMode) {
             return false
         }
+
         when (event?.action) {
             MotionEvent.ACTION_DOWN -> {
                 latestDownX = event.x
@@ -131,6 +198,15 @@ class PaperRectangle : View {
                 movePoints()
                 latestDownY = event.y
                 latestDownX = event.x
+            }
+            MotionEvent.ACTION_UP -> {
+                println("action up")
+            }
+            MotionEvent.ACTION_CANCEL -> {
+                println("action cancel")
+            }
+            MotionEvent.ACTION_DOWN -> {
+                println("action down")
             }
         }
         return true

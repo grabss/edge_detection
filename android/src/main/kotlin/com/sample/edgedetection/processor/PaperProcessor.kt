@@ -1,5 +1,6 @@
 package com.sample.edgedetection.processor
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
 import org.opencv.android.Utils
@@ -141,4 +142,9 @@ private fun sortPoints(points: List<Point>): List<Point> {
     val p2 = points.maxBy { point -> point.x + point.y } ?: Point()
     val p3 = points.maxBy { point -> point.y - point.x } ?: Point()
     return listOf(p0, p1, p2, p3)
+}
+
+fun convertDpToPx(dp: Float, context: Context): Float {
+    val metrics = context.resources.displayMetrics
+    return dp * metrics.density
 }

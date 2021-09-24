@@ -24,4 +24,5 @@
     <string name="description_zoom_touch_close">サムネイルの拡大画像</string>
     <string name="sort_desc">長押ししてドラッグで並び替えできます。</string>
     <string name="confirm_delete">削除してよろしいですか</string>
+    <string name="max_count_desc">30枚まで撮影できます</string>
 </resources>

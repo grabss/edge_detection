@@ -13,6 +13,7 @@ import android.view.SurfaceHolder
 import android.widget.Toast
 import com.google.gson.Gson
 import com.sample.edgedetection.*
+import com.sample.edgedetection.crop.BeforehandCropPresenter
 import com.sample.edgedetection.model.Image
 import com.sample.edgedetection.processor.Corners
 import com.sample.edgedetection.processor.processPicture
@@ -29,6 +30,7 @@ import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -187,6 +189,8 @@ class ScanPresenter constructor(private val context: Context, private val iView:
             .subscribe {
                 val pictureSize = p1?.parameters?.pictureSize
                 Log.i(TAG, "picture size: " + pictureSize.toString())
+                Log.i(TAG, "picture size width: " + pictureSize?.width)
+                Log.i(TAG, "picture size height: " + pictureSize?.height)
                 val mat = Mat(
                     Size(
                         pictureSize?.width?.toDouble() ?: 1920.toDouble(),
@@ -194,13 +198,19 @@ class ScanPresenter constructor(private val context: Context, private val iView:
                     ), CvType.CV_8U
                 )
                 var bitmap = BitmapFactory.decodeByteArray(p0, 0, p0!!.size)
-                // リサイズ
-                val matrix = Matrix()
-                matrix.postScale(0.5f, 0.5f)
-                bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
 
-                // グレースケール処理
+                val matrix = Matrix()
+
+                // リサイズ
+                matrix.postScale(0.5f, 0.5f)
+                println("bitmapWidth: ${bitmap.width}")
+                println("bitmapHeight: ${bitmap.height}")
+                bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+                println("bitmapWidth2: ${bitmap.width}")
+                println("bitmapHeight2: ${bitmap.height}")
                 grayScale(mat, bitmap)
+                println("mat size width: ${mat.size().width}")
+                println("mat size height: ${mat.size().height}")
                 mat.put(0, 0, p0)
 
                 val pic = Imgcodecs.imdecode(mat, Imgcodecs.CV_LOAD_IMAGE_UNCHANGED)
@@ -247,24 +257,36 @@ class ScanPresenter constructor(private val context: Context, private val iView:
         )
 
         val baos = ByteArrayOutputStream()
-        rotatedBm.compress(Bitmap.CompressFormat.JPEG, 50, baos)
+        rotatedBm.compress(Bitmap.CompressFormat.JPEG, 90, baos)
+
         val b = baos.toByteArray()
         // Base64形式でSharedPrefに保存
         // 取り出す時->Base64.decode(image, Base64.DEFAULT)
         val b64 = Base64.encodeToString(b, Base64.DEFAULT)
-        val image = Image(b64)
+        val uuid = UUID.randomUUID().toString()
+        val image = Image(id = uuid, b64 = b64, originalB64 = b64)
 
-        // 画像の配列に追加
-        images.add(image)
-        val json = gson.toJson(images)
+        val updatedMat = Mat(Size(rotatedBm.width.toDouble(), rotatedBm.height.toDouble()), CvType.CV_8U)
+        updatedMat.put(0, 0, b)
+        val editMat = Imgcodecs.imdecode(updatedMat, Imgcodecs.CV_LOAD_IMAGE_UNCHANGED)
+        val corners = processPicture(editMat)
 
-        val editor = sp.edit()
-        editor.putString(IMAGE_ARRAY, json).apply()
-
-        scanActv.updateCount()
+        // 矩形が取得できた場合、一覧に表示させる画像をクロップ済みのものにする
+        if (corners != null) {
+            val beforeCropPresenter = BeforehandCropPresenter(context, corners, editMat)
+            beforeCropPresenter.cropAndSave(image = image, scanPre = this)
+        } else {
+            addImageToList(image)
+        }
     }
 
-
+    fun addImageToList(image: Image) {
+        images.add(image)
+        val json = gson.toJson(images)
+        val editor = sp.edit()
+        editor.putString(IMAGE_ARRAY, json).apply()
+        scanActv.updateCount()
+    }
 
     override fun onPreviewFrame(p0: ByteArray?, p1: Camera?) {
         if (isBusy) {

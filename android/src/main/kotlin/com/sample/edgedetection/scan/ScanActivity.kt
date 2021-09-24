@@ -13,8 +13,10 @@ import android.view.MenuItem
 import android.view.SurfaceView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.gson.Gson
 import com.sample.edgedetection.*
 import com.sample.edgedetection.base.BaseActivity
+import com.sample.edgedetection.model.Image
 import com.sample.edgedetection.view.PaperRectangle
 
 import kotlinx.android.synthetic.main.activity_scan.*
@@ -31,6 +33,7 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
     private lateinit var sp: SharedPreferences
 
     private var count = 0
+    private val gson = Gson()
 
     override fun provideContentViewId(): Int = R.layout.activity_scan
 
@@ -123,6 +126,17 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
             shut.text = count.toString()
             toEnableBtns()
         }
+    }
+
+    fun saveImage(image: Image) {
+        var images = mutableListOf<Image>()
+        val json = sp.getString(IMAGE_ARRAY, null)
+        if (json != null) {
+            images = jsonToImageArray(json)
+        }
+        images.add(image)
+        val editor = sp.edit()
+        editor.putString(IMAGE_ARRAY, gson.toJson(images)).apply()
     }
 
     // 撮影済み画像枚数取得

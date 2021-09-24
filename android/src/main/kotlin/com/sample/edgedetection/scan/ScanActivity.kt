@@ -11,6 +11,7 @@ import android.util.Log
 import android.view.Display
 import android.view.MenuItem
 import android.view.SurfaceView
+import android.widget.SeekBar
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.gson.Gson
@@ -22,20 +23,21 @@ import com.sample.edgedetection.view.PaperRectangle
 import kotlinx.android.synthetic.main.activity_scan.*
 import org.json.JSONArray
 import org.opencv.android.OpenCVLoader
+import kotlin.concurrent.thread
 
 class ScanActivity : BaseActivity(), IScanView.Proxy {
 
     private val REQUEST_CAMERA_PERMISSION = 0
     private val EXIT_TIME = 2000
-
     private lateinit var mPresenter: ScanPresenter
-
     private lateinit var sp: SharedPreferences
 
     private var count = 0
     private val gson = Gson()
 
     override fun provideContentViewId(): Int = R.layout.activity_scan
+
+    private var needFlash = false
 
     override fun initPresenter() {
         mPresenter = ScanPresenter(this, this, this)
@@ -88,6 +90,22 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
             )
         }
 
+        setBtnListener()
+    }
+
+    private fun setBtnListener() {
+        flashBtn.setOnClickListener {
+            thread {
+                mPresenter.toggleFlashMode()
+            }
+            needFlash = !needFlash
+            if (needFlash) {
+                flashBtn.setImageResource(R.drawable.ic_baseline_flash_on_24)
+            } else {
+                flashBtn.setImageResource(R.drawable.ic_baseline_flash_off_24)
+            }
+        }
+
         shut.setOnClickListener {
             toDisableBtns()
             mPresenter.shut()
@@ -100,6 +118,35 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
             val editor = sp.edit()
             editor.putBoolean(CAN_EDIT_IMAGES, true).apply()
         }
+    }
+
+    fun setSlider(max: Int?) {
+        println("max: $max")
+        exposureSlider.progress = max ?: 0
+
+        // Android8.0以上でしかminの値がセットできないため、
+        // maxの値を2倍に
+        if (max != null) {
+            exposureSlider.max = max * 2
+        }
+        exposureSlider.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
+
+            // 値変更時に呼ばれる
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                val value = (max ?: 0) - progress
+                println("value: $value")
+                mPresenter.setExposure(value)
+            }
+
+            // つまみタッチ時に呼ばれる
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                println("ドラッグスタート")
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                println("リリース")
+            }
+        })
     }
 
     private fun adjustBtnsState() {

@@ -23,6 +23,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
+import com.sample.edgedetection.model.BM
 import com.sample.edgedetection.model.Image
 import kotlinx.android.synthetic.main.activity_rotate.cancelBtn
 import kotlinx.android.synthetic.main.activity_rotate.decisionBtn
@@ -33,7 +34,8 @@ import kotlin.concurrent.thread
 class SortActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
     private lateinit var sp: SharedPreferences
     private var index = 0
-    private val bmList = mutableListOf<Bitmap>()
+    private val bmList = mutableListOf<BM>()
+    private lateinit var images: ArrayList<Image>
     private var currentAnimator: Animator? = null
     private var shortAnimationDuration: Int = 0
     private lateinit var imageAdapter: ImageAdapter
@@ -65,7 +67,8 @@ class SortActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
             for(image in images) {
                 val imageBytes = Base64.decode(image.b64, Base64.DEFAULT)
                 val decodedImg = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-                bmList.add(decodedImg)
+                val bm = BM(id = image.id, bitmap = decodedImg)
+                bmList.add(bm)
             }
         }
         imageAdapter = ImageAdapter(bmList)
@@ -114,7 +117,7 @@ class SortActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
     private fun zoomImageFromThumb(thumbView: View, position: Int) {
         currentAnimator?.cancel()
 
-        expandedImage.setImageBitmap(bmList[position])
+        expandedImage.setImageBitmap(bmList[position].bitmap)
 
         val startBoundsInt = Rect()
         val finalBoundsInt = Rect()
@@ -226,7 +229,6 @@ class SortActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
             toDisableBtns()
             index = 0
             thread {
-                // SharedPrefの値を更新
                 updateData()
                 navToImageListScrn()
             }
@@ -248,11 +250,11 @@ class SortActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
         val editor = sp.edit()
         for(bm in bmList) {
             val baos = ByteArrayOutputStream()
-            bm.compress(Bitmap.CompressFormat.JPEG, 100, baos)
+            bm.bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
             val b = baos.toByteArray()
-            val b64 = Base64.encodeToString(b, Base64.DEFAULT)
-            val image = Image(b64)
-            newImages.add(image)
+            val image = images.first { it.id == bm.id }
+            val updatedB64 = Base64.encodeToString(b, Base64.DEFAULT)
+            newImages.add(image.copy(b64 = updatedB64))
         }
         if (newImages.isEmpty()) {
             editor.putString(IMAGE_ARRAY, null).apply()
@@ -281,8 +283,8 @@ class SortActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
     override fun onCancelClick() {
     }
 
-    private inner class ImageAdapter(bmList: List<Bitmap>): RecyclerView.Adapter<ImageAdapter.ViewHolder>() {
-        private var bmList: MutableList<Bitmap> = bmList as MutableList<Bitmap>
+    private inner class ImageAdapter(bmList: List<BM>): RecyclerView.Adapter<ImageAdapter.ViewHolder>() {
+        private var bmList: MutableList<BM> = bmList as MutableList<BM>
 
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val textView: TextView = view.findViewById(R.id.index)
@@ -307,7 +309,7 @@ class SortActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
 
             val imageView = holder.imageView
             imageView.layoutParams.width = width
-            imageView.setImageBitmap(bmList[position])
+            imageView.setImageBitmap(bmList[position].bitmap)
 
             val trashBtn = holder.trashBtn
             trashBtn.setOnClickListener {

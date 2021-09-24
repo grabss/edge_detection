@@ -20,6 +20,7 @@ class RotateActivity : AppCompatActivity() {
     private lateinit var sp: SharedPreferences
     private lateinit var decodedImg: Bitmap
     private lateinit var images: ArrayList<Image>
+    private lateinit var image: Image
     private var index = 0
     private val matrix = Matrix()
     private val gson = Gson()
@@ -43,7 +44,8 @@ class RotateActivity : AppCompatActivity() {
 
         val json = sp.getString(IMAGE_ARRAY, null)
         images = jsonToImageArray(json!!)
-        val b64Image = images[index].b64
+        image = images[index]
+        val b64Image = image.b64
         val imageBytes = Base64.decode(b64Image, Base64.DEFAULT)
         decodedImg = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
         imageView.setImageBitmap(decodedImg)
@@ -79,9 +81,9 @@ class RotateActivity : AppCompatActivity() {
         val baos = ByteArrayOutputStream()
         decodedImg.compress(Bitmap.CompressFormat.JPEG, 100, baos)
         val b = baos.toByteArray()
-        val updatedImg = Base64.encodeToString(b, Base64.DEFAULT)
-        val image = Image(updatedImg)
-        images[index] = image
+        val updatedB64 = Base64.encodeToString(b, Base64.DEFAULT)
+        val editedImage = image.copy(b64 = updatedB64)
+        images[index] = editedImage
         val editor = sp.edit()
         editor.putString(IMAGE_ARRAY, gson.toJson(images)).apply()
     }

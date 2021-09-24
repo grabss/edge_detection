@@ -39,6 +39,7 @@ class ScanPresenter constructor(private val context: Context, private val iView:
     SurfaceHolder.Callback, Camera.PictureCallback, Camera.PreviewCallback {
     private val TAG: String = "ScanPresenter"
     private var mCamera: Camera? = null
+    private var param: Camera.Parameters? = null
     private val mSurfaceHolder: SurfaceHolder = iView.getSurfaceView().holder
     private val executor: ExecutorService
     private val proxySchedule: Scheduler
@@ -113,28 +114,52 @@ class ScanPresenter constructor(private val context: Context, private val iView:
             return
         }
 
+        param = mCamera?.parameters
 
-        val param = mCamera?.parameters
+        // 露光の最大値と最小値を取得して、スライダーにセット
+        val maxExposure = param?.maxExposureCompensation
+        scanActv.setSlider(maxExposure)
+
         val size = getMaxResolution()
+        println("sizeWidth: ${size?.width}")
+        println("sizeHeight: ${size?.height}")
         param?.setPreviewSize(size?.width ?: 1920, size?.height ?: 1080)
         val display = iView.getDisplay()
         val point = Point()
         display.getRealSize(point)
         val displayWidth = minOf(point.x, point.y)
+        println("displayWidth: $displayWidth")
         val displayHeight = maxOf(point.x, point.y)
+        println("displayHeight: $displayHeight")
         val displayRatio = displayWidth.div(displayHeight.toFloat())
-        val previewRatio = size?.height?.toFloat()?.div(size.width.toFloat()) ?: displayRatio
+        println("displayRatio: $displayRatio")
+        val previewRatio = size?.height?.div(size.width?.toFloat()) ?: displayRatio
+        println("previewRatio: $previewRatio")
         if (displayRatio > previewRatio) {
+            println("displayRatio > previewRatio")
             val surfaceParams = iView.getSurfaceView().layoutParams
+            println("surfaceParams: $surfaceParams")
+            println("surfaceParams height: ${surfaceParams.height}")
+            println("surfaceParams width: ${surfaceParams.width}")
             surfaceParams.height = (displayHeight / displayRatio * previewRatio).toInt()
+            println("surfaceParams height2: ${surfaceParams.height}")
             iView.getSurfaceView().layoutParams = surfaceParams
         }
 
         val supportPicSize = mCamera?.parameters?.supportedPictureSizes
+
+        // 端末ごとの撮影可能サイズ
+        if (supportPicSize != null) {
+            for(support in supportPicSize) {
+                println("support width: ${support.width}、support height: ${support.height}")
+            }
+        }
         supportPicSize?.sortByDescending { it.width.times(it.height) }
         var pictureSize = supportPicSize?.find {
             it.height.toFloat().div(it.width.toFloat()) - previewRatio < 0.01
         }
+        println("picture size width: ${pictureSize?.width}")
+        println("picture size height: ${pictureSize?.height}")
 
         if (null == pictureSize) {
             pictureSize = supportPicSize?.get(0)
@@ -163,6 +188,20 @@ class ScanPresenter constructor(private val context: Context, private val iView:
             }
         }
         mCamera?.setDisplayOrientation(90)
+    }
+
+    fun toggleFlashMode() {
+        if(param?.flashMode == Camera.Parameters.FLASH_MODE_ON) {
+            param?.flashMode = Camera.Parameters.FLASH_MODE_OFF
+        } else {
+            param?.flashMode = Camera.Parameters.FLASH_MODE_ON
+        }
+        mCamera?.parameters = param
+    }
+
+    fun setExposure(value: Int) {
+        param?.exposureCompensation = value
+        mCamera?.parameters = param
     }
 
     override fun surfaceCreated(p0: SurfaceHolder) {
@@ -215,7 +254,6 @@ class ScanPresenter constructor(private val context: Context, private val iView:
 
                 val pic = Imgcodecs.imdecode(mat, Imgcodecs.CV_LOAD_IMAGE_UNCHANGED)
                 Core.rotate(pic, pic, Core.ROTATE_90_CLOCKWISE)
-                mat.release()
                 SourceManager.corners = processPicture(pic)
                 mat.release()
 
@@ -228,7 +266,6 @@ class ScanPresenter constructor(private val context: Context, private val iView:
 //                        CropActivity::class.java
 //                    ), REQUEST_CODE
 //                )
-
                 saveImage(bitmap)
                 isBusy = false
                 start()
@@ -302,7 +339,9 @@ class ScanPresenter constructor(private val context: Context, private val iView:
                     Log.i(TAG, "start prepare paper")
                     val parameters = p1?.parameters
                     val width = parameters?.previewSize?.width
+                    println("previewSizeWidth: $width")
                     val height = parameters?.previewSize?.height
+                    println("previewSizeHeight: $height")
                     val yuv = YuvImage(
                         p0, parameters?.previewFormat ?: 0, width ?: 320, height
                             ?: 480, null
@@ -333,7 +372,6 @@ class ScanPresenter constructor(private val context: Context, private val iView:
                     }.observeOn(AndroidSchedulers.mainThread())
                         .subscribe({
                             iView.getPaperRect().onCornersDetected(it)
-
                         }, {
                             iView.getPaperRect().onCornersNotDetected()
                         })

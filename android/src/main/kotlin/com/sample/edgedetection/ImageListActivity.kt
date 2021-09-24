@@ -54,6 +54,7 @@ class ImageListActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener 
                 index = intent.getIntExtra(INDEX, 0)
 
                 viewPager = pager
+                viewPager.offscreenPageLimit = 5
                 viewPager.adapter = pagerAdapter
                 viewPager.setCurrentItem(index, false)
                 TabLayoutMediator(indicator, viewPager) { _, _ -> }.attach()
@@ -93,6 +94,7 @@ class ImageListActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener 
         upload_btn.setOnClickListener {
             upload()
         }
+        toDisableBtns()
     }
 
     private fun toEnableBtns() {

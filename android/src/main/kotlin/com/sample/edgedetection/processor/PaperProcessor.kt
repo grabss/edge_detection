@@ -52,25 +52,6 @@ fun cropPicture(picture: Mat, pts: List<Point>): Mat {
     return croppedPic
 }
 
-fun enhancePicture(src: Bitmap?): Bitmap {
-    val src_mat = Mat()
-    Utils.bitmapToMat(src, src_mat)
-    Imgproc.cvtColor(src_mat, src_mat, Imgproc.COLOR_RGBA2GRAY)
-    Imgproc.adaptiveThreshold(
-        src_mat,
-        src_mat,
-        255.0,
-        Imgproc.ADAPTIVE_THRESH_MEAN_C,
-        Imgproc.THRESH_BINARY,
-        15,
-        15.0
-    )
-    val result = Bitmap.createBitmap(src?.width ?: 1080, src?.height ?: 1920, Bitmap.Config.RGB_565)
-    Utils.matToBitmap(src_mat, result, true)
-    src_mat.release()
-    return result
-}
-
 private fun findContours(src: Mat): ArrayList<MatOfPoint> {
 
     val grayImage: Mat

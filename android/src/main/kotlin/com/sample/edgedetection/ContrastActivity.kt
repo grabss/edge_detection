@@ -82,10 +82,19 @@ class ContrastActivity : AppCompatActivity() {
         decodedImg.compress(Bitmap.CompressFormat.JPEG, 100, baos)
         val b = baos.toByteArray()
         val updatedB64 = Base64.encodeToString(b, Base64.DEFAULT)
+        val thumbB64 = getThumbB64(decodedImg)
         val editedImage = image.copy(b64 = updatedB64)
         images[index] = editedImage
         val editor = sp.edit()
         editor.putString(IMAGE_ARRAY, gson.toJson(images)).apply()
+    }
+
+    private fun getThumbB64(bm: Bitmap): String {
+        val thumbBm = Bitmap.createScaledBitmap(bm, bm.width/2, bm.height/2, false)
+        val thumbBaos = ByteArrayOutputStream()
+        thumbBm.compress(Bitmap.CompressFormat.JPEG, 100, thumbBaos)
+        val thumbB = thumbBaos.toByteArray()
+        return Base64.encodeToString(thumbB, Base64.DEFAULT)
     }
 
     private fun setSlider() {

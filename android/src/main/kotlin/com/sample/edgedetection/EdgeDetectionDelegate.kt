@@ -89,6 +89,7 @@ class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultL
 
         // FlutterにArray<ByteArray>型でデータを渡す
         result?.success(byteList)
+        sp.edit().clear().apply()
         clearMethodCallAndResult()
     }
 

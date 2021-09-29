@@ -65,7 +65,7 @@ class SortActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
         if (json != null) {
             images = jsonToImageArray(json)
             for(image in images) {
-                val imageBytes = Base64.decode(image.b64, Base64.DEFAULT)
+                val imageBytes = Base64.decode(image.thumbB64, Base64.DEFAULT)
                 val decodedImg = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
                 val bm = BM(id = image.id, bitmap = decodedImg)
                 bmList.add(bm)
@@ -253,8 +253,7 @@ class SortActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
             bm.bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
             val b = baos.toByteArray()
             val image = images.first { it.id == bm.id }
-            val updatedB64 = Base64.encodeToString(b, Base64.DEFAULT)
-            newImages.add(image.copy(b64 = updatedB64))
+            newImages.add(image)
         }
         if (newImages.isEmpty()) {
             editor.putString(IMAGE_ARRAY, null).apply()

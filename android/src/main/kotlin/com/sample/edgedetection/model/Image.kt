@@ -6,5 +6,6 @@ import java.io.Serializable
 data class Image(
     val id: String,
     val b64: String,
-    val originalB64: String
+    val originalB64: String,
+    val thumbB64: String
 ): Serializable

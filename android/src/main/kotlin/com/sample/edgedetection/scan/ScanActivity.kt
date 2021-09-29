@@ -172,6 +172,11 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
         Handler(Looper.getMainLooper()).post  {
             shut.text = count.toString()
             toEnableBtns()
+            if (PHOTO_MAX_COUNT <= count) {
+//                shut.isEnabled = false
+                shut.background = resources.getDrawable(R.drawable.reached_max_count_picture_button, null)
+                maxCountDesc.text = resources.getString(R.string.reached_max_count)
+            }
         }
     }
 
@@ -205,6 +210,16 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
         shut.text = count.toString()
         toEnableBtns()
         adjustBtnsState()
+        if (PHOTO_MAX_COUNT <= count) {
+//            shut.isEnabled = false
+            shut.background = resources.getDrawable(R.drawable.reached_max_count_picture_button, null)
+            maxCountDesc.text = resources.getString(R.string.reached_max_count)
+        } else {
+            shut.background = resources.getDrawable(R.drawable.picture_button, null)
+            maxCountDesc.text = resources.getString(R.string.max_count_desc)
+        }
+        mPresenter.initImageArray()
+        mPresenter.start()
         mPresenter.initImageArray()
         mPresenter.start()
     }

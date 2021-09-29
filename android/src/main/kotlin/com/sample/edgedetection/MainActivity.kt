@@ -8,7 +8,8 @@ const val SPNAME = "images"
 const val IMAGE_ARRAY = "imageArray"
 const val SHOULD_UPLOAD = "shouldUpload"
 const val CAN_EDIT_IMAGES = "canEditImages"
-const val PHOTO_MAX_COUNT = 30
+const val PHOTO_MAX_COUNT = 20
+const val SCALE_SIZE = 1280
 
 class MainActivity : AppCompatActivity() {
 

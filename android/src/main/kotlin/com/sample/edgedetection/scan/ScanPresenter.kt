@@ -49,7 +49,6 @@ class ScanPresenter constructor(private val context: Context, private val iView:
     var images = mutableListOf<Image>()
     private var matrix: Matrix
     private val gson = Gson()
-    private val scaleSize = 1280
 
     init {
         mSurfaceHolder.addCallback(this)
@@ -226,8 +225,10 @@ class ScanPresenter constructor(private val context: Context, private val iView:
                 val footerSpace = pictureSize?.width?.div(10) ?: 550
 
                 val aspect = pictureSize?.width?.div(pictureSize?.height.toDouble())
-                pictureSize?.height = scaleSize
-                pictureSize?.width = (scaleSize * aspect!!).toInt()
+                if (SCALE_SIZE < pictureSize?.height!!) {
+                    pictureSize?.height = SCALE_SIZE
+                    pictureSize?.width = (SCALE_SIZE * aspect!!).toInt()
+                }
                 var bitmap = BitmapFactory.decodeByteArray(p0, 0, p0!!.size)
 
                 println("bitmapWidth: ${bitmap.width}")
@@ -291,7 +292,7 @@ class ScanPresenter constructor(private val context: Context, private val iView:
         )
 
         val baos = ByteArrayOutputStream()
-        rotatedBm.compress(Bitmap.CompressFormat.JPEG, 80, baos)
+        rotatedBm.compress(Bitmap.CompressFormat.JPEG, 70, baos)
 
         val b = baos.toByteArray()
         // Base64形式でSharedPrefに保存

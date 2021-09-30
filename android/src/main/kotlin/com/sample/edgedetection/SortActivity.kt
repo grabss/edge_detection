@@ -4,12 +4,11 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
-import android.content.Context
+import android.content.ContentValues
 import android.content.Intent
-import android.content.SharedPreferences
 import android.graphics.*
 import android.os.Bundle
-import android.util.Base64
+import android.provider.BaseColumns
 import android.util.DisplayMetrics
 import android.view.LayoutInflater
 import android.view.View
@@ -22,32 +21,30 @@ import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.Gson
-import com.sample.edgedetection.model.BM
+import com.sample.edgedetection.base.ID
+import com.sample.edgedetection.helper.DbHelper
+import com.sample.edgedetection.helper.ImageTable
 import com.sample.edgedetection.model.Image
 import kotlinx.android.synthetic.main.activity_rotate.cancelBtn
 import kotlinx.android.synthetic.main.activity_rotate.decisionBtn
 import kotlinx.android.synthetic.main.activity_sort.*
-import java.io.ByteArrayOutputStream
 import kotlin.concurrent.thread
 
 class SortActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
-    private lateinit var sp: SharedPreferences
-    private var index = 0
-    private val bmList = mutableListOf<BM>()
-    private lateinit var images: ArrayList<Image>
+    private var id = ""
+    private val imageList = mutableListOf<Image>()
     private var currentAnimator: Animator? = null
     private var shortAnimationDuration: Int = 0
     private lateinit var imageAdapter: ImageAdapter
     private val dm = DisplayMetrics()
     private val dialog = ConfirmDialogFragment()
-    private var tmpIndex = 0
+    private var index = 0
+    private val dbHelper = DbHelper(this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sort)
-        index = intent.getIntExtra(INDEX, 0)
-        sp = getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
+        id = intent.getStringExtra(ID).toString()
         setGridView()
         setHelper()
         grid.layoutManager = GridLayoutManager(this, 3, RecyclerView.VERTICAL, false)
@@ -61,17 +58,28 @@ class SortActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
     }
 
     private fun setGridView() {
-        val json = sp.getString(IMAGE_ARRAY, null)
-        if (json != null) {
-            images = jsonToImageArray(json)
-            for(image in images) {
-                val imageBytes = Base64.decode(image.thumbB64, Base64.DEFAULT)
-                val decodedImg = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-                val bm = BM(id = image.id, bitmap = decodedImg)
-                bmList.add(bm)
+        val db = dbHelper.readableDatabase
+        val order = "${ImageTable.COLUMN_NAME_ORDER_INDEX} ASC"
+        val cursor = db.query(
+            ImageTable.TABLE_NAME,
+            arrayOf(BaseColumns._ID, ImageTable.COLUMN_NAME_THUMB_BITMAP, ImageTable.COLUMN_NAME_ORDER_INDEX),
+            null,
+            null,
+            null,
+            null,
+            order
+        )
+        with(cursor) {
+            while (moveToNext()) {
+                val id = getLong(getColumnIndexOrThrow(BaseColumns._ID)).toString()
+                val blob = getBlob(getColumnIndexOrThrow(ImageTable.COLUMN_NAME_THUMB_BITMAP))
+                val orderIndex = getInt(getColumnIndexOrThrow(ImageTable.COLUMN_NAME_ORDER_INDEX))
+                val thumbBm = BitmapFactory.decodeByteArray(blob, 0, blob.size)
+                val image = Image(id = id, thumbBm = thumbBm, orderIndex = orderIndex)
+                imageList.add(image)
             }
         }
-        imageAdapter = ImageAdapter(bmList)
+        imageAdapter = ImageAdapter(imageList)
         grid.adapter = imageAdapter
     }
 
@@ -87,9 +95,9 @@ class SortActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
                     val fromPos = viewHolder.adapterPosition
                     val toPos = target.adapterPosition
                     imageAdapter.notifyItemMoved(fromPos, toPos)
-                    var moto = bmList[fromPos]
-                    bmList.removeAt(fromPos)
-                    bmList.add(toPos, moto)
+                    var moto = imageList[fromPos]
+                    imageList.removeAt(fromPos)
+                    imageList.add(toPos, moto)
 
                     if (fromPos < toPos) {
                         println("fromPos < toPos")
@@ -117,7 +125,7 @@ class SortActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
     private fun zoomImageFromThumb(thumbView: View, position: Int) {
         currentAnimator?.cancel()
 
-        expandedImage.setImageBitmap(bmList[position].bitmap)
+        expandedImage.setImageBitmap(imageList[position].thumbBm)
 
         val startBoundsInt = Rect()
         val finalBoundsInt = Rect()
@@ -245,45 +253,49 @@ class SortActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
     }
 
     private fun updateData() {
-        val gson = Gson()
-        var newImages = mutableListOf<Image>()
-        val editor = sp.edit()
-        for(bm in bmList) {
-            val baos = ByteArrayOutputStream()
-            bm.bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
-            val b = baos.toByteArray()
-            val image = images.first { it.id == bm.id }
-            newImages.add(image)
+        val db = dbHelper.writableDatabase
+        var i = 1
+        for(img in imageList) {
+            val values = getContentValues(i)
+            val selection = "${BaseColumns._ID} = ?"
+            db.update(
+                ImageTable.TABLE_NAME,
+                values,
+                selection,
+                arrayOf(img.id)
+            )
+            i++
         }
-        if (newImages.isEmpty()) {
-            editor.putString(IMAGE_ARRAY, null).apply()
-        } else {
-            editor.putString(IMAGE_ARRAY, gson.toJson(newImages)).apply()
+    }
+
+    private fun getContentValues(index: Int): ContentValues {
+        return ContentValues().apply {
+            put("${ImageTable.COLUMN_NAME_ORDER_INDEX}", index)
         }
     }
 
     private fun navToImageListScrn() {
         val intent = Intent(this, ImageListActivity::class.java)
-        intent.putExtra(INDEX, index)
+        intent.putExtra(ID, id)
         startActivityForResult(intent, 100)
         finish()
     }
 
     private fun showAlertDlg(position: Int) {
-        tmpIndex = position
+        index = position
         dialog.show(supportFragmentManager, "TAG")
     }
 
     override fun onDecisionClick() {
-        imageAdapter.removeItem(tmpIndex)
+        imageAdapter.removeItem(index)
     }
 
     // ダイアログのキャンセルボタンタップ時に処理を加える場合はここに記述
     override fun onCancelClick() {
     }
 
-    private inner class ImageAdapter(bmList: List<BM>): RecyclerView.Adapter<ImageAdapter.ViewHolder>() {
-        private var bmList: MutableList<BM> = bmList as MutableList<BM>
+    private inner class ImageAdapter(imageList: List<Image>): RecyclerView.Adapter<ImageAdapter.ViewHolder>() {
+        private var imageList: MutableList<Image> = imageList as MutableList<Image>
 
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val textView: TextView = view.findViewById(R.id.index)
@@ -308,7 +320,7 @@ class SortActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
 
             val imageView = holder.imageView
             imageView.layoutParams.width = width
-            imageView.setImageBitmap(bmList[position].bitmap)
+            imageView.setImageBitmap(imageList[position].thumbBm)
 
             val trashBtn = holder.trashBtn
             trashBtn.setOnClickListener {
@@ -322,12 +334,15 @@ class SortActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
             }
         }
 
-        override fun getItemCount() = bmList.size
+        override fun getItemCount() = imageList.size
 
         fun removeItem(position: Int){
-            bmList.removeAt(position)
+            val db = dbHelper.writableDatabase
+            val image = imageList[position]
+            db.delete(ImageTable.TABLE_NAME, "${BaseColumns._ID} = ?", arrayOf(image.id))
+            imageList.removeAt(position)
             notifyDataSetChanged()
-            if (bmList.isEmpty()) {
+            if (imageList.isEmpty()) {
                 disableDecisionBtn()
             }
         }

@@ -1,5 +1,6 @@
 package com.sample.edgedetection.scan
 
+import android.content.ContentValues
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
@@ -13,7 +14,10 @@ import android.view.SurfaceHolder
 import android.widget.Toast
 import com.google.gson.Gson
 import com.sample.edgedetection.*
+import com.sample.edgedetection.base.SCALE_SIZE
 import com.sample.edgedetection.crop.BeforehandCropPresenter
+import com.sample.edgedetection.helper.DbHelper
+import com.sample.edgedetection.helper.ImageTable
 import com.sample.edgedetection.model.Image
 import com.sample.edgedetection.processor.Corners
 import com.sample.edgedetection.processor.processPicture
@@ -45,28 +49,16 @@ class ScanPresenter constructor(private val context: Context, private val iView:
     private val proxySchedule: Scheduler
     private var isBusy: Boolean = false
     private var soundSilence: MediaPlayer = MediaPlayer()
-    private var sp: SharedPreferences
-    var images = mutableListOf<Image>()
     private var matrix: Matrix
-    private val gson = Gson()
+    private val dbHelper = DbHelper(context)
 
     init {
         mSurfaceHolder.addCallback(this)
         executor = Executors.newSingleThreadExecutor()
         proxySchedule = Schedulers.from(executor)
         soundSilence = MediaPlayer.create(this.context, R.raw.silence)
-        sp = context.getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
         matrix = Matrix()
         matrix.postRotate(90F)
-    }
-
-    // SharedPrefに画像がある場合、変数に初期値として代入
-    fun initImageArray() {
-        Log.i(TAG, "initImageArray")
-        val json = sp.getString(IMAGE_ARRAY, null)
-        if (json != null) {
-            images = jsonToImageArray(json)
-        }
     }
 
     fun start() {
@@ -255,8 +247,6 @@ class ScanPresenter constructor(private val context: Context, private val iView:
                 SourceManager.corners = processPicture(pic)
                 mat.release()
 
-                SourceManager.pic = pic
-
                 // 矩形編集画面に遷移
 //                (context as Activity).startActivityForResult(
 //                    Intent(
@@ -273,9 +263,6 @@ class ScanPresenter constructor(private val context: Context, private val iView:
     private fun grayScale(mat: Mat, bm: Bitmap) {
         Utils.bitmapToMat(bm, mat)
         Imgproc.cvtColor(mat, mat, Imgproc.COLOR_RGB2GRAY)
-
-        // 記事ではこの記述も必要と書かれているが、クラッシュする
-//        Imgproc.cvtColor(mat, mat, Imgproc.COLOR_GRAY2RGBA, 4)
         Utils.matToBitmap(mat, bm)
     }
 
@@ -293,16 +280,8 @@ class ScanPresenter constructor(private val context: Context, private val iView:
 
         val baos = ByteArrayOutputStream()
         rotatedBm.compress(Bitmap.CompressFormat.JPEG, 70, baos)
-
+        val thumbBm = Bitmap.createScaledBitmap(rotatedBm, rotatedBm.width/3, rotatedBm.height/3, false)
         val b = baos.toByteArray()
-        // Base64形式でSharedPrefに保存
-        // 取り出す時->Base64.decode(image, Base64.DEFAULT)
-        val b64 = Base64.encodeToString(b, Base64.DEFAULT)
-        val thumbB64 = getThumbB64(rotatedBm)
-
-        val uuid = UUID.randomUUID().toString()
-        val image = Image(id = uuid, b64 = b64, originalB64 = b64, thumbB64 = thumbB64)
-
         val updatedMat = Mat(Size(rotatedBm.width.toDouble(), rotatedBm.height.toDouble()), CvType.CV_8U)
         updatedMat.put(0, 0, b)
         val editMat = Imgcodecs.imdecode(updatedMat, Imgcodecs.CV_LOAD_IMAGE_UNCHANGED)
@@ -311,27 +290,63 @@ class ScanPresenter constructor(private val context: Context, private val iView:
         // 矩形が取得できた場合、一覧に表示させる画像をクロップ済みのものにする
         if (corners != null) {
             val beforeCropPresenter = BeforehandCropPresenter(context, corners, editMat)
-            beforeCropPresenter.cropAndSave(image = image, scanPre = this)
+            beforeCropPresenter.cropAndSave(this, rotatedBm)
         } else {
-            addImageToList(image)
+            saveImageToDB(originalBm = rotatedBm, thumbBm = thumbBm, croppedBm = rotatedBm)
         }
     }
 
-    private fun getThumbB64(rotatedBm: Bitmap): String {
-        // ※単体表示用の半分
-        val thumbBm = Bitmap.createScaledBitmap(rotatedBm, rotatedBm.width/2, rotatedBm.height/2, false)
-        val thumbBaos = ByteArrayOutputStream()
-        thumbBm.compress(Bitmap.CompressFormat.JPEG, 100, thumbBaos)
-        val thumbB = thumbBaos.toByteArray()
-        return Base64.encodeToString(thumbB, Base64.DEFAULT)
+    fun saveImageToDB(originalBm: Bitmap, thumbBm: Bitmap, croppedBm: Bitmap) {
+        val original = getBinaryFromBitmap(originalBm)
+        val thumb = getBinaryFromBitmap(thumbBm)
+        val cropped = getBinaryFromBitmap(croppedBm)
+        val values = getContentValues(originBinary = original, thumbBinary = thumb, croppedBinary = cropped)
+        val db = dbHelper.writableDatabase
+        db.insert(ImageTable.TABLE_NAME, null, values)
+        scanActv.updateCount()
     }
 
-    fun addImageToList(image: Image) {
-        images.add(image)
-        val json = gson.toJson(images)
-        val editor = sp.edit()
-        editor.putString(IMAGE_ARRAY, json).apply()
-        scanActv.updateCount()
+    //値セットを取得
+    //@param URI
+    //@return 値セット
+    private fun getContentValues(originBinary: ByteArray, thumbBinary: ByteArray, croppedBinary: ByteArray): ContentValues {
+        return ContentValues().apply {
+            put("${ImageTable.COLUMN_NAME_ORIGINAL_BITMAP}", originBinary)
+            put("${ImageTable.COLUMN_NAME_THUMB_BITMAP}", thumbBinary)
+            put("${ImageTable.COLUMN_NAME_BITMAP}", croppedBinary)
+            put("${ImageTable.COLUMN_NAME_ORDER_INDEX}", getMaxOrderIndex() + 1)
+        }
+    }
+
+    private fun getMaxOrderIndex(): Int {
+        val db = dbHelper.readableDatabase
+        val order = "${ImageTable.COLUMN_NAME_ORDER_INDEX} DESC"
+        val cursor = db.query(
+            ImageTable.TABLE_NAME,
+            arrayOf(ImageTable.COLUMN_NAME_ORDER_INDEX),
+            null,
+            null,
+            null,
+            null,
+            order
+        )
+        return if (cursor.count == 0) {
+            0
+        } else {
+            cursor.moveToFirst()
+            val max = cursor.getInt(cursor.getColumnIndexOrThrow(ImageTable.COLUMN_NAME_ORDER_INDEX))
+            println("max: $max")
+            max
+        }
+    }
+
+    //Binaryを取得
+    //@param Bitmap
+    //@return Binary
+    private fun getBinaryFromBitmap(bitmap: Bitmap): ByteArray{
+        val byteArrayOutputStream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream)
+        return byteArrayOutputStream.toByteArray()
     }
 
     override fun onPreviewFrame(p0: ByteArray?, p1: Camera?) {

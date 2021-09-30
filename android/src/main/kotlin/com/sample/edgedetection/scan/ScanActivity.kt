@@ -7,6 +7,7 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
+import android.provider.BaseColumns
 import android.util.Log
 import android.view.Display
 import android.view.MenuItem
@@ -16,7 +17,9 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.gson.Gson
 import com.sample.edgedetection.*
-import com.sample.edgedetection.base.BaseActivity
+import com.sample.edgedetection.base.*
+import com.sample.edgedetection.helper.DbHelper
+import com.sample.edgedetection.helper.ImageTable
 import com.sample.edgedetection.model.Image
 import com.sample.edgedetection.view.PaperRectangle
 
@@ -33,11 +36,17 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
     private lateinit var sp: SharedPreferences
 
     private var count = 0
-    private val gson = Gson()
 
     override fun provideContentViewId(): Int = R.layout.activity_scan
 
     private var needFlash = false
+
+    private val dbHelper = DbHelper(this)
+
+    override fun onDestroy() {
+        dbHelper.close()
+        super.onDestroy()
+    }
 
     override fun initPresenter() {
         mPresenter = ScanPresenter(this, this, this)
@@ -180,26 +189,19 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
         }
     }
 
-    fun saveImage(image: Image) {
-        var images = mutableListOf<Image>()
-        val json = sp.getString(IMAGE_ARRAY, null)
-        if (json != null) {
-            images = jsonToImageArray(json)
-        }
-        images.add(image)
-        val editor = sp.edit()
-        editor.putString(IMAGE_ARRAY, gson.toJson(images)).apply()
-    }
-
     // 撮影済み画像枚数取得
     private fun getImageCount(): Int {
-        val json = sp.getString(IMAGE_ARRAY, null)
-        return if (json == null) {
-            0
-        } else {
-            val images = jsonToImageArray(json)
-            images.size
-        }
+        val db = dbHelper.readableDatabase
+        val cursor = db.query(
+            ImageTable.TABLE_NAME,
+            arrayOf(BaseColumns._ID),
+            null,
+            null,
+            null,
+            null,
+            null
+        )
+        return cursor.count
     }
 
     // 初回カメラ起動時、画像一覧画面から戻ってきた場合にのみ呼ばれる
@@ -207,7 +209,11 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
         println("onStart")
         super.onStart()
         count = getImageCount()
-        shut.text = count.toString()
+        Handler(Looper.getMainLooper()).post {
+            shut.text = count.toString()
+        }
+        needFlash = false
+        flashBtn.setImageResource(R.drawable.ic_baseline_flash_off_24)
         toEnableBtns()
         adjustBtnsState()
         if (PHOTO_MAX_COUNT <= count) {
@@ -218,9 +224,6 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
             shut.background = resources.getDrawable(R.drawable.picture_button, null)
             maxCountDesc.text = resources.getString(R.string.max_count_desc)
         }
-        mPresenter.initImageArray()
-        mPresenter.start()
-        mPresenter.initImageArray()
         mPresenter.start()
     }
 

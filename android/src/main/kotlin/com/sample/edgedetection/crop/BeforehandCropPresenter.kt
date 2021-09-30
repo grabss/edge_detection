@@ -1,8 +1,11 @@
 package com.sample.edgedetection.crop
 
+import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
+import com.sample.edgedetection.helper.DbHelper
+import com.sample.edgedetection.helper.ImageTable
 import com.sample.edgedetection.processor.Corners
 import com.sample.edgedetection.processor.TAG
 import com.sample.edgedetection.processor.cropPicture
@@ -19,6 +22,7 @@ class BeforehandCropPresenter(val context: Context, private val corners: Corners
     private var picture: Mat
     private var croppedPicture: Mat? = null
     private var croppedBitmap: Bitmap? = null
+    private val dbHelper = DbHelper(context)
 
     init {
         println("init BeforehandCropPresenter")
@@ -50,7 +54,63 @@ class BeforehandCropPresenter(val context: Context, private val corners: Corners
                 val baos = ByteArrayOutputStream()
                 croppedBitmap!!.compress(Bitmap.CompressFormat.JPEG, 100, baos)
                 val thumbBm = Bitmap.createScaledBitmap(croppedBitmap!!, croppedBitmap!!.width/2, croppedBitmap!!.height/2, false)
-                scanPre?.saveImageToDB(originalBm, thumbBm, croppedBitmap!!)
+                if (scanPre == null) {
+                    saveImageToDB(originalBm, thumbBm, croppedBitmap!!)
+                } else {
+                    scanPre.saveImageToDB(originalBm, thumbBm, croppedBitmap!!)
+                }
             }
+    }
+
+    private fun saveImageToDB(originalBm: Bitmap, thumbBm: Bitmap, croppedBm: Bitmap) {
+        val original = getBinaryFromBitmap(originalBm)
+        val thumb = getBinaryFromBitmap(thumbBm)
+        val cropped = getBinaryFromBitmap(croppedBm)
+        val values = getContentValues(originBinary = original, thumbBinary = thumb, croppedBinary = cropped)
+        val db = dbHelper.writableDatabase
+        db.insert(ImageTable.TABLE_NAME, null, values)
+    }
+
+    //値セットを取得
+    //@param URI
+    //@return 値セット
+    private fun getContentValues(originBinary: ByteArray, thumbBinary: ByteArray, croppedBinary: ByteArray): ContentValues {
+        return ContentValues().apply {
+            put("${ImageTable.COLUMN_NAME_ORIGINAL_BITMAP}", originBinary)
+            put("${ImageTable.COLUMN_NAME_THUMB_BITMAP}", thumbBinary)
+            put("${ImageTable.COLUMN_NAME_BITMAP}", croppedBinary)
+            put("${ImageTable.COLUMN_NAME_ORDER_INDEX}", getMaxOrderIndex() + 1)
+        }
+    }
+
+    private fun getMaxOrderIndex(): Int {
+        val db = dbHelper.readableDatabase
+        val order = "${ImageTable.COLUMN_NAME_ORDER_INDEX} DESC"
+        val cursor = db.query(
+            ImageTable.TABLE_NAME,
+            arrayOf(ImageTable.COLUMN_NAME_ORDER_INDEX),
+            null,
+            null,
+            null,
+            null,
+            order
+        )
+        return if (cursor.count == 0) {
+            0
+        } else {
+            cursor.moveToFirst()
+            val max = cursor.getInt(cursor.getColumnIndexOrThrow(ImageTable.COLUMN_NAME_ORDER_INDEX))
+            println("max: $max")
+            max
+        }
+    }
+
+    //Binaryを取得
+    //@param Bitmap
+    //@return Binary
+    private fun getBinaryFromBitmap(bitmap: Bitmap): ByteArray{
+        val byteArrayOutputStream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream)
+        return byteArrayOutputStream.toByteArray()
     }
 }

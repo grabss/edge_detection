@@ -3,7 +3,13 @@ package com.sample.edgedetection
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.provider.BaseColumns
 import android.util.Base64
+import com.sample.edgedetection.base.SHOULD_UPLOAD
+import com.sample.edgedetection.base.SPNAME
+import com.sample.edgedetection.helper.DbHelper
+import com.sample.edgedetection.helper.ImageTable
+import com.sample.edgedetection.model.Image
 import com.sample.edgedetection.scan.ScanActivity
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -16,6 +22,7 @@ class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultL
     var result: MethodChannel.Result? = null
     private var methodCall: MethodCall? = null
     private val sp = activity.getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
+    private val dbHelper = DbHelper(activity)
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         println("=====onActivityResult3=====")
@@ -25,7 +32,7 @@ class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultL
                 println("=====onActivityResult5=====")
                 if (null != data && null != data.extras) {
                     println("=====onActivityResult6=====")
-                    val json: String? = sp.getString(IMAGE_ARRAY,null)
+                    val json: String? = ""
                     finishWithSuccess(json)
 
                     // 本来はString型で単体画像ファイルのパスを渡していた
@@ -46,11 +53,13 @@ class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultL
     }
 
     fun openCameraActivity(call: MethodCall, result: MethodChannel.Result) {
-
         if (!setPendingMethodCallAndResult(call, result)) {
             finishWithAlreadyActiveError()
             return
         }
+
+        val db = dbHelper.writableDatabase
+        db.delete(ImageTable.TABLE_NAME, null, null)
 
         var intent = Intent(Intent(activity.applicationContext, ScanActivity::class.java))
         activity.startActivityForResult(intent, REQUEST_CODE)
@@ -80,17 +89,35 @@ class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultL
 
     private fun finishWithSuccess(json: String?) {
         println("finishWithSuccess")
-        val byteList = ArrayList<ByteArray>()
-        val images = jsonToImageArray(json!!)
-        for (image in images) {
-            val imageBytes = Base64.decode(image.b64, Base64.DEFAULT)
-            byteList.add(imageBytes)
-        }
+        val byteList = getByteArrayFromDB()
 
         // FlutterにArray<ByteArray>型でデータを渡す
         result?.success(byteList)
         sp.edit().clear().apply()
         clearMethodCallAndResult()
+    }
+
+    private fun getByteArrayFromDB(): ArrayList<ByteArray> {
+        val db = dbHelper.readableDatabase
+        val order = "${ImageTable.COLUMN_NAME_ORDER_INDEX} ASC"
+
+        val cursor = db.query(
+            ImageTable.TABLE_NAME,
+            arrayOf(ImageTable.COLUMN_NAME_BITMAP, ImageTable.COLUMN_NAME_ORDER_INDEX),
+            null,
+            null,
+            null,
+            null,
+            order
+        )
+        val byteList = ArrayList<ByteArray>()
+        with(cursor) {
+            while (moveToNext()) {
+                val blob = getBlob(getColumnIndexOrThrow(ImageTable.COLUMN_NAME_BITMAP))
+                byteList.add(blob)
+            }
+        }
+        return byteList
     }
 
     private fun clearMethodCallAndResult() {

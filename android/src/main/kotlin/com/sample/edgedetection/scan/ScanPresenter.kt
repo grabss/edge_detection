@@ -279,7 +279,7 @@ class ScanPresenter constructor(private val context: Context, private val iView:
         )
 
         val baos = ByteArrayOutputStream()
-        rotatedBm.compress(Bitmap.CompressFormat.JPEG, 70, baos)
+        rotatedBm.compress(Bitmap.CompressFormat.JPEG, 80, baos)
         val thumbBm = Bitmap.createScaledBitmap(rotatedBm, rotatedBm.width/3, rotatedBm.height/3, false)
         val b = baos.toByteArray()
         val updatedMat = Mat(Size(rotatedBm.width.toDouble(), rotatedBm.height.toDouble()), CvType.CV_8U)
@@ -290,7 +290,7 @@ class ScanPresenter constructor(private val context: Context, private val iView:
         // 矩形が取得できた場合、一覧に表示させる画像をクロップ済みのものにする
         if (corners != null) {
             val beforeCropPresenter = BeforehandCropPresenter(context, corners, editMat)
-            beforeCropPresenter.cropAndSave(this, rotatedBm)
+            beforeCropPresenter.cropAndSave(scanPre = this, originalBm = rotatedBm)
         } else {
             saveImageToDB(originalBm = rotatedBm, thumbBm = thumbBm, croppedBm = rotatedBm)
         }

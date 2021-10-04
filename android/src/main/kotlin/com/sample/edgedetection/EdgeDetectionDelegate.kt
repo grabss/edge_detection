@@ -26,6 +26,7 @@ class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultL
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         println("=====onActivityResult3=====")
+        println("requestCode: $requestCode")
         if (requestCode == REQUEST_CODE) {
             println("=====onActivityResult4=====")
             if (resultCode == Activity.RESULT_OK) {
@@ -57,10 +58,8 @@ class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultL
             finishWithAlreadyActiveError()
             return
         }
-
         val db = dbHelper.writableDatabase
         db.delete(ImageTable.TABLE_NAME, null, null)
-
         var intent = Intent(Intent(activity.applicationContext, ScanActivity::class.java))
         activity.startActivityForResult(intent, REQUEST_CODE)
     }

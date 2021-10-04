@@ -1,16 +1,19 @@
 package com.sample.edgedetection
 
 import android.app.AlertDialog
-import android.content.Context
-import android.content.Intent
-import android.content.SharedPreferences
+import android.content.*
+import android.database.Cursor
 import android.database.CursorWindow
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
+import android.media.ExifInterface
+import android.net.Uri
+import android.os.*
 import android.provider.BaseColumns
+import android.provider.DocumentsContract
+import android.provider.MediaStore
 import android.util.Base64
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,17 +25,24 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayoutMediator
 import com.google.gson.Gson
-import com.sample.edgedetection.base.CAN_EDIT_IMAGES
-import com.sample.edgedetection.base.ID
-import com.sample.edgedetection.base.SHOULD_UPLOAD
-import com.sample.edgedetection.base.SPNAME
+import com.sample.edgedetection.base.*
+import com.sample.edgedetection.crop.BeforehandCropPresenter
 import com.sample.edgedetection.crop.CropActivity
 import com.sample.edgedetection.helper.DbHelper
 import com.sample.edgedetection.helper.ImageTable
 import com.sample.edgedetection.model.Image
 import kotlinx.android.synthetic.main.activity_image_list.*
-import org.json.JSONArray
+import android.graphics.*
+import com.sample.edgedetection.processor.processPicture
+import org.opencv.core.CvType
+import org.opencv.core.Mat
+import org.opencv.core.Size
+import org.opencv.imgcodecs.Imgcodecs
+import org.opencv.imgproc.Imgproc
+import java.io.ByteArrayOutputStream
 import java.lang.Exception
+import kotlin.concurrent.thread
+import org.opencv.android.Utils
 
 class ImageListActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener {
 
@@ -112,7 +122,6 @@ class ImageListActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener 
                     pagerAdapter.updateData(images)
 //                    viewPager.setCurrentItem(position, false)
                 }
-
             }
 
             override fun onPageSelected(position: Int) {
@@ -329,7 +338,302 @@ class ImageListActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener 
         }
         if (images.isEmpty()) {
             toDisableBtns()
+            val isFromCamera = sp.getBoolean("isFromCamera", false)
+            if (isFromCamera) {
+                finish()
+            } else {
+                openGallery()
+            }
         }
+    }
+
+    private fun openGallery() {
+        val editor = sp.edit()
+        editor.clear().apply()
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+
+            // 複数選択
+            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+            type = "image/*"
+        }
+        startActivityForResult(intent, REQUEST_GALLERY_TAKE)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        println("requestCode: $requestCode")
+
+        // カメラ撮影からのアップロード時。
+        // ここでは何も処理させない。->2重登録になってしまうため
+        if(requestCode == 101) {
+            return
+        }
+
+        if (requestCode == REQUEST_GALLERY_TAKE && resultCode == RESULT_OK) {
+            val editor = sp.edit()
+            finish()
+            if (data?.clipData != null) {
+                println("複数選択")
+                val intent = Intent(this, ImageListActivity::class.java)
+                startActivityForResult(intent, 999)
+
+                thread {
+                    val count = data.clipData!!.itemCount
+                    println("count: $count")
+                    for (i in 0 until count) {
+                        val imageUri = data.clipData!!.getItemAt(i).uri
+                        val byte = this.contentResolver.openInputStream(imageUri)?.use { it.readBytes() }
+                        var bitmap = BitmapFactory.decodeByteArray(byte, 0, byte!!.size)
+
+                        // 短辺が最大1280ピクセルになるようにリサイズ
+                        var w = bitmap.width
+                        var h = bitmap.height
+                        var aspect = 1.0
+                        if (w < h) {
+                            aspect = h / w.toDouble()
+                        } else if (h < w) {
+                            aspect = w / h.toDouble()
+                        }
+
+                        if (w == h && SCALE_SIZE < w) {
+                            w = SCALE_SIZE
+                            h = SCALE_SIZE
+                        } else if ((w < h) && (SCALE_SIZE < w)) {
+                            w = SCALE_SIZE
+                            h = (SCALE_SIZE * aspect).toInt()
+                        } else if ((h < w) && (SCALE_SIZE < h)) {
+                            h = SCALE_SIZE
+                            w = (SCALE_SIZE * aspect).toInt()
+                        }
+                        val mat = Mat(Size(w.toDouble(), h.toDouble()), CvType.CV_8U)
+
+                        bitmap = Bitmap.createScaledBitmap(bitmap, w, h, true)
+                        grayScale(mat, bitmap)
+                        val path = getPathFromUri(this, imageUri)
+                        val exif = ExifInterface(path!!)
+                        val rotatedBm = when (exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED)) {
+                            ExifInterface.ORIENTATION_ROTATE_90 -> rotate(bitmap, 90F)
+                            ExifInterface.ORIENTATION_ROTATE_180 -> rotate(bitmap, 180F)
+                            ExifInterface.ORIENTATION_ROTATE_270 -> rotate(bitmap, 270F)
+                            ExifInterface.ORIENTATION_NORMAL -> bitmap
+                            else -> bitmap
+                        }
+                        mat.release()
+                        val baos = ByteArrayOutputStream()
+                        rotatedBm.compress(Bitmap.CompressFormat.JPEG, 80, baos)
+                        val thumbBm = Bitmap.createScaledBitmap(rotatedBm, rotatedBm.width / 3, rotatedBm.height / 3, false)
+                        val b = baos.toByteArray()
+                        val updatedMat = Mat(Size(rotatedBm.width.toDouble(), rotatedBm.height.toDouble()), CvType.CV_8U)
+                        updatedMat.put(0, 0, b)
+                        val editMat = Imgcodecs.imdecode(updatedMat, Imgcodecs.CV_LOAD_IMAGE_UNCHANGED)
+                        val corners = processPicture(editMat)
+
+                        // 矩形が取得できるか確認し、取得できた場合はクロップ済みの画像もDBに追加
+                        if (corners != null) {
+                            val beforeCropPresenter = BeforehandCropPresenter(this, corners, editMat)
+                            beforeCropPresenter.cropAndSave(originalBm = rotatedBm)
+                        } else {
+                            saveImageToDB(originalBm = rotatedBm, thumbBm = thumbBm, croppedBm = rotatedBm)
+                        }
+                    }
+                    editor.putBoolean(CAN_EDIT_IMAGES, true).apply()
+                }
+            } else if (data?.data != null) {
+                println("単体選択")
+                val intent = Intent(this, ImageListActivity::class.java)
+                startActivityForResult(intent, 999)
+
+                thread {
+                    // 単体選択時
+                    val imageUri = data.data!!
+                    val byte = this.contentResolver.openInputStream(imageUri)?.use { it.readBytes() }
+                    var bitmap = BitmapFactory.decodeByteArray(byte, 0, byte!!.size)
+                    var w = bitmap.width
+                    var h = bitmap.height
+                    var aspect = 1.0
+                    if (w < h) {
+                        aspect = h / w.toDouble()
+                    } else if (h < w) {
+                        aspect = w / h.toDouble()
+                    }
+
+                    if (w == h && SCALE_SIZE < w) {
+                        w = SCALE_SIZE
+                        h = SCALE_SIZE
+                    } else if ((w < h) && (SCALE_SIZE < w)) {
+                        w = SCALE_SIZE
+                        h = (SCALE_SIZE * aspect).toInt()
+                    } else if ((h < w) && (SCALE_SIZE < h)) {
+                        h = SCALE_SIZE
+                        w = (SCALE_SIZE * aspect).toInt()
+                    }
+                    val mat = Mat(Size(w.toDouble(), h.toDouble()), CvType.CV_8U)
+
+                    bitmap = Bitmap.createScaledBitmap(bitmap, w, h, true)
+                    grayScale(mat, bitmap)
+                    val path = getPathFromUri(this, imageUri)
+                    val exif = ExifInterface(path!!)
+                    val rotatedBm = when (exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED)) {
+                        ExifInterface.ORIENTATION_ROTATE_90 -> rotate(bitmap, 90F)
+                        ExifInterface.ORIENTATION_ROTATE_180 -> rotate(bitmap, 180F)
+                        ExifInterface.ORIENTATION_ROTATE_270 -> rotate(bitmap, 270F)
+                        ExifInterface.ORIENTATION_NORMAL -> bitmap
+                        else -> bitmap
+                    }
+                    mat.release()
+                    val baos = ByteArrayOutputStream()
+                    rotatedBm.compress(Bitmap.CompressFormat.JPEG, 80, baos)
+                    val thumbBm = Bitmap.createScaledBitmap(rotatedBm, rotatedBm.width / 3, rotatedBm.height / 3, false)
+                    val b = baos.toByteArray()
+                    val updatedMat = Mat(Size(rotatedBm.width.toDouble(), rotatedBm.height.toDouble()), CvType.CV_8U)
+                    updatedMat.put(0, 0, b)
+                    val editMat = Imgcodecs.imdecode(updatedMat, Imgcodecs.CV_LOAD_IMAGE_UNCHANGED)
+                    val corners = processPicture(editMat)
+
+                    // 矩形が取得できるか確認し、取得できた場合はimageを更新する
+                    if (corners != null) {
+                        val beforeCropPresenter = BeforehandCropPresenter(this, corners, editMat)
+                        beforeCropPresenter.cropAndSave(originalBm = rotatedBm)
+                        editor.putBoolean(CAN_EDIT_IMAGES, true).apply()
+                    } else {
+                        saveImageToDB(originalBm = rotatedBm, thumbBm = thumbBm, croppedBm = rotatedBm)
+                        editor.putBoolean(CAN_EDIT_IMAGES, true).apply()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun getPathFromUri(context: Context, uri: Uri): String? {
+        val isAfterKitKat = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT
+        // DocumentProvider
+        Log.e("getPathFromUri", "uri:" + uri.authority!!)
+        if (isAfterKitKat && DocumentsContract.isDocumentUri(context, uri)) {
+            if ("com.android.externalstorage.documents" == uri.authority) {// ExternalStorageProvider
+                val docId = DocumentsContract.getDocumentId(uri)
+                val split = docId.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                val type = split[0]
+                if ("primary".equals(type, ignoreCase = true))
+                {
+                    return (Environment.getExternalStorageDirectory().path + "/" + split[1])
+                } else
+                {
+                    return  "/stroage/" + type + "/" + split[1]
+                }
+            } else if ("com.android.providers.downloads.documents" == uri.authority) {// DownloadsProvider
+                val id = DocumentsContract.getDocumentId(uri)
+                val contentUri = ContentUris.withAppendedId(
+                    Uri.parse("content://downloads/public_downloads"), java.lang.Long.valueOf(id)
+                )
+                return getDataColumn(context, contentUri, null, null)
+            } else if ("com.android.providers.media.documents" == uri.authority) {// MediaProvider
+                val docId = DocumentsContract.getDocumentId(uri)
+                val split = docId.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                var contentUri: Uri? = MediaStore.Files.getContentUri("external")
+                val selection = "_id=?"
+                val selectionArgs = arrayOf(split[1])
+                return getDataColumn(context, contentUri, selection, selectionArgs)
+            }
+        } else if ("content".equals(uri.scheme!!, ignoreCase = true)) {//MediaStore
+            return getDataColumn(context, uri, null, null)
+        } else if ("file".equals(uri.scheme!!, ignoreCase = true)) {// File
+            return uri.path
+        }
+        return null
+    }
+
+    private fun getDataColumn(
+        context: Context, uri: Uri?, selection: String?,
+        selectionArgs: Array<String>?
+    ): String? {
+        var cursor: Cursor? = null
+        val projection = arrayOf(MediaStore.Files.FileColumns.DATA)
+        try {
+            cursor = context.contentResolver.query(
+                uri!!, projection, selection, selectionArgs, null
+            )
+            if (cursor != null && cursor.moveToFirst()) {
+                val cindex = cursor.getColumnIndexOrThrow(projection[0])
+                return cursor.getString(cindex)
+            }
+        } finally {
+            if (cursor != null)
+                cursor.close()
+        }
+        return null
+    }
+
+    private fun grayScale(mat: Mat, bm: Bitmap) {
+        Utils.bitmapToMat(bm, mat)
+        Imgproc.cvtColor(mat, mat, Imgproc.COLOR_RGB2GRAY)
+        Utils.matToBitmap(mat, bm)
+    }
+
+    private fun rotate(bm: Bitmap, angle: Float): Bitmap {
+        val matrix = Matrix()
+        matrix.postRotate(angle)
+        return Bitmap.createBitmap(
+            bm,
+            0,
+            0,
+            bm.width,
+            bm.height,
+            matrix,
+            true
+        )
+    }
+
+    private fun saveImageToDB(originalBm: Bitmap, thumbBm: Bitmap, croppedBm: Bitmap) {
+        val original = getBinaryFromBitmap(originalBm)
+        val thumb = getBinaryFromBitmap(thumbBm)
+        val cropped = getBinaryFromBitmap(croppedBm)
+        val values = getContentValues(originBinary = original, thumbBinary = thumb, croppedBinary = cropped)
+        val db = dbHelper.writableDatabase
+        db.insert(ImageTable.TABLE_NAME, null, values)
+    }
+
+    //値セットを取得
+    //@param URI
+    //@return 値セット
+    private fun getContentValues(originBinary: ByteArray, thumbBinary: ByteArray, croppedBinary: ByteArray): ContentValues {
+        return ContentValues().apply {
+            put("${ImageTable.COLUMN_NAME_ORIGINAL_BITMAP}", originBinary)
+            put("${ImageTable.COLUMN_NAME_THUMB_BITMAP}", thumbBinary)
+            put("${ImageTable.COLUMN_NAME_BITMAP}", croppedBinary)
+            put("${ImageTable.COLUMN_NAME_ORDER_INDEX}", getMaxOrderIndex() + 1)
+        }
+    }
+
+    private fun getMaxOrderIndex(): Int {
+        val db = dbHelper.readableDatabase
+        val order = "${ImageTable.COLUMN_NAME_ORDER_INDEX} DESC"
+        val cursor = db.query(
+            ImageTable.TABLE_NAME,
+            arrayOf(ImageTable.COLUMN_NAME_ORDER_INDEX),
+            null,
+            null,
+            null,
+            null,
+            order
+        )
+        return if (cursor.count == 0) {
+            0
+        } else {
+            cursor.moveToFirst()
+            val max = cursor.getInt(cursor.getColumnIndexOrThrow(ImageTable.COLUMN_NAME_ORDER_INDEX))
+            println("max: $max")
+            max
+        }
+    }
+
+    //Binaryを取得
+    //@param Bitmap
+    //@return Binary
+    private fun getBinaryFromBitmap(bitmap: Bitmap): ByteArray{
+        val byteArrayOutputStream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream)
+        return byteArrayOutputStream.toByteArray()
     }
 
     private fun deleteRowFromDB(id: String) {

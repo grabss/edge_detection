@@ -52,7 +52,9 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
         mPresenter = ScanPresenter(this, this, this)
 
         sp = getSharedPreferences(SPNAME, Context.MODE_PRIVATE)
-        sp.edit().clear().apply()
+        val edit = sp.edit()
+        edit.clear().apply()
+        edit.putBoolean("isFromCamera", true).apply()
     }
 
     override fun prepare() {

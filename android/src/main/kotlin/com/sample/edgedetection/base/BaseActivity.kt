@@ -10,6 +10,7 @@ const val PHOTO_MAX_COUNT = 50
 const val SCALE_SIZE = 1280
 const val ID = "ID"
 const val SHOULD_UPLOAD = "shouldUpload"
+const val REQUEST_GALLERY_TAKE = 1
 
 abstract class BaseActivity : AppCompatActivity() {
 

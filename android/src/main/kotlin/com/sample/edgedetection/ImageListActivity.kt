@@ -199,6 +199,7 @@ class ImageListActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener 
             order
         )
         val imageList = ArrayList<Image>()
+        println("cursor count: ${cursor.count}")
         with(cursor) {
             while (moveToNext()) {
                 val id = getLong(getColumnIndexOrThrow(BaseColumns._ID)).toString()
@@ -212,8 +213,13 @@ class ImageListActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener 
     }
 
     private fun updateFirstAndSecondImage() {
-        val firstImage = getHighQualityImage(0)
-        images[0] = firstImage
+        println("============")
+        println("image size: ${images.size}")
+        println("============")
+        if (images.size > 0) {
+            val firstImage = getHighQualityImage(0)
+            images[0] = firstImage
+        }
         if (images.size > 1) {
             val secondImage = getHighQualityImage(1)
             images[1] = secondImage

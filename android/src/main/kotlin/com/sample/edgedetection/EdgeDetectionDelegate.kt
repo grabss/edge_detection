@@ -89,35 +89,11 @@ class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultL
 
     private fun finishWithSuccess(json: String?) {
         println("finishWithSuccess")
-        val byteList = getByteArrayFromDB()
+        val emptyList = ArrayList<String>()
 
-        // FlutterにArray<ByteArray>型でデータを渡す
-        result?.success(byteList)
-        sp.edit().clear().apply()
+        // Flutterに空配列を渡す
+        result?.success(emptyList)
         clearMethodCallAndResult()
-    }
-
-    private fun getByteArrayFromDB(): ArrayList<ByteArray> {
-        val db = dbHelper.readableDatabase
-        val order = "${ImageTable.COLUMN_NAME_ORDER_INDEX} ASC"
-
-        val cursor = db.query(
-            ImageTable.TABLE_NAME,
-            arrayOf(ImageTable.COLUMN_NAME_BITMAP, ImageTable.COLUMN_NAME_ORDER_INDEX),
-            null,
-            null,
-            null,
-            null,
-            order
-        )
-        val byteList = ArrayList<ByteArray>()
-        with(cursor) {
-            while (moveToNext()) {
-                val blob = getBlob(getColumnIndexOrThrow(ImageTable.COLUMN_NAME_BITMAP))
-                byteList.add(blob)
-            }
-        }
-        return byteList
     }
 
     private fun clearMethodCallAndResult() {

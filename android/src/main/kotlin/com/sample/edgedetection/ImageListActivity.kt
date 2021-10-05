@@ -434,19 +434,7 @@ class ImageListActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener 
                         val baos = ByteArrayOutputStream()
                         rotatedBm.compress(Bitmap.CompressFormat.JPEG, 80, baos)
                         val thumbBm = Bitmap.createScaledBitmap(rotatedBm, rotatedBm.width / 3, rotatedBm.height / 3, false)
-                        val b = baos.toByteArray()
-                        val updatedMat = Mat(Size(rotatedBm.width.toDouble(), rotatedBm.height.toDouble()), CvType.CV_8U)
-                        updatedMat.put(0, 0, b)
-                        val editMat = Imgcodecs.imdecode(updatedMat, Imgcodecs.CV_LOAD_IMAGE_UNCHANGED)
-                        val corners = processPicture(editMat)
-
-                        // 矩形が取得できるか確認し、取得できた場合はクロップ済みの画像もDBに追加
-                        if (corners != null) {
-                            val beforeCropPresenter = BeforehandCropPresenter(this, corners, editMat)
-                            beforeCropPresenter.cropAndSave(originalBm = rotatedBm)
-                        } else {
-                            saveImageToDB(originalBm = rotatedBm, thumbBm = thumbBm, croppedBm = rotatedBm)
-                        }
+                        saveImageToDB(originalBm = rotatedBm, thumbBm = thumbBm, croppedBm = rotatedBm)
                     }
                     editor.putBoolean(CAN_EDIT_IMAGES, true).apply()
                 }
@@ -496,21 +484,8 @@ class ImageListActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener 
                     val baos = ByteArrayOutputStream()
                     rotatedBm.compress(Bitmap.CompressFormat.JPEG, 80, baos)
                     val thumbBm = Bitmap.createScaledBitmap(rotatedBm, rotatedBm.width / 3, rotatedBm.height / 3, false)
-                    val b = baos.toByteArray()
-                    val updatedMat = Mat(Size(rotatedBm.width.toDouble(), rotatedBm.height.toDouble()), CvType.CV_8U)
-                    updatedMat.put(0, 0, b)
-                    val editMat = Imgcodecs.imdecode(updatedMat, Imgcodecs.CV_LOAD_IMAGE_UNCHANGED)
-                    val corners = processPicture(editMat)
-
-                    // 矩形が取得できるか確認し、取得できた場合はimageを更新する
-                    if (corners != null) {
-                        val beforeCropPresenter = BeforehandCropPresenter(this, corners, editMat)
-                        beforeCropPresenter.cropAndSave(originalBm = rotatedBm)
-                        editor.putBoolean(CAN_EDIT_IMAGES, true).apply()
-                    } else {
-                        saveImageToDB(originalBm = rotatedBm, thumbBm = thumbBm, croppedBm = rotatedBm)
-                        editor.putBoolean(CAN_EDIT_IMAGES, true).apply()
-                    }
+                    saveImageToDB(originalBm = rotatedBm, thumbBm = thumbBm, croppedBm = rotatedBm)
+                    editor.putBoolean(CAN_EDIT_IMAGES, true).apply()
                 }
             }
         }

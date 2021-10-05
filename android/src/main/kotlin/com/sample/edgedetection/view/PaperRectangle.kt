@@ -125,6 +125,13 @@ class PaperRectangle : View {
         bl = corners?.corners?.get(3) ?: Point(size?.width?.times(0.05) ?: 0.0, size?.height?.times(0.95) ?: 0.0)
         println("bl: $bl")
 
+        // ポイントが重複した場合、デフォルトのラインを引く
+        if (tl == tr || tl == br || tl == bl || tr == br || tr == bl || br == bl) {
+            tl = Point(size?.width?.times(0.05) ?: 0.0, size?.height?.times(0.05) ?: 0.0)
+            tr = Point(size?.width?.times(0.95) ?: 0.0, size?.height?.times(0.05) ?: 0.0)
+            br = Point(size?.width?.times(0.95) ?: 0.0, size?.height?.times(0.95) ?: 0.0)
+            bl = Point(size?.width?.times(0.05) ?: 0.0, size?.height?.times(0.95) ?: 0.0)
+        }
 
         val displayMetrics = DisplayMetrics()
         (context as Activity).windowManager.defaultDisplay.getMetrics(displayMetrics)

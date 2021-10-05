@@ -34,6 +34,11 @@ class ContrastActivity : AppCompatActivity() {
         setSlider()
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        dbHelper.close()
+    }
+
     override fun onBackPressed() {
         toDisableBtns()
         navToImageListScrn()

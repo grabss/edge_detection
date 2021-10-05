@@ -27,6 +27,7 @@ class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultL
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         println("=====onActivityResult3=====")
         println("requestCode: $requestCode")
+        println("data: $data")
         if (requestCode == REQUEST_CODE) {
             println("=====onActivityResult4=====")
             if (resultCode == Activity.RESULT_OK) {
@@ -99,6 +100,4 @@ class EdgeDetectionDelegate(activity: Activity) : PluginRegistry.ActivityResultL
         methodCall = null
         result = null
     }
-
-
 }

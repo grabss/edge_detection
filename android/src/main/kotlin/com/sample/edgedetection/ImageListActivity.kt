@@ -1,5 +1,6 @@
 package com.sample.edgedetection
 
+import android.app.Activity
 import android.app.AlertDialog
 import android.content.*
 import android.database.Cursor
@@ -64,6 +65,10 @@ class ImageListActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener 
             val result = sp.getBoolean(CAN_EDIT_IMAGES, false)
             if (result) {
                 images = getImagesFromDB()
+                if (images.isEmpty()) {
+                    finish()
+                    return
+                }
                 updateFirstAndSecondImage()
                 pagerAdapter = ImageListPagerAdapter(images)
 
@@ -356,6 +361,7 @@ class ImageListActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener 
             // 複数選択
             putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
             type = "image/*"
+            setResult(Activity.RESULT_OK, this)
         }
         startActivityForResult(intent, REQUEST_GALLERY_TAKE)
     }
@@ -363,6 +369,11 @@ class ImageListActivity : FragmentActivity(), ConfirmDialogFragment.BtnListener 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         println("requestCode: $requestCode")
+        println("data: $data")
+        if (data == null) {
+            finish()
+            return
+        }
 
         // カメラ撮影からのアップロード時。
         // ここでは何も処理させない。->2重登録になってしまうため

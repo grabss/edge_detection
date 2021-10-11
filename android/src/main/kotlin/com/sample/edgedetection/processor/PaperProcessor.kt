@@ -56,7 +56,7 @@ private fun findContours(src: Mat): ArrayList<MatOfPoint> {
 
     val grayImage: Mat
     val cannedImage: Mat
-    val kernel: Mat = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(9.0, 9.0))
+    val kernel: Mat = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(3.0, 3.0))
     val dilate: Mat
     val size = Size(src.size().width, src.size().height)
     grayImage = Mat(size, CvType.CV_8UC4)

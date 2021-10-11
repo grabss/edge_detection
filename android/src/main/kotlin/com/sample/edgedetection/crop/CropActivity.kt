@@ -4,6 +4,8 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -52,8 +54,10 @@ class CropActivity : BaseActivity(), ICropView.Proxy {
     private fun navToImageListScrn() {
         val intent = Intent(this, ImageListActivity::class.java)
         intent.putExtra(ID, id)
-        startActivityForResult(intent, 100)
-        finish()
+        Handler(Looper.getMainLooper()).postDelayed({
+            startActivityForResult(intent, 100)
+            finish()
+        }, 500)
     }
 
     override fun provideContentViewId(): Int = R.layout.activity_crop

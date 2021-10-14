@@ -5,9 +5,11 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.provider.BaseColumns
+import android.provider.Settings
 import android.util.Log
 import android.view.Display
 import android.view.MenuItem
@@ -28,9 +30,8 @@ import org.json.JSONArray
 import org.opencv.android.OpenCVLoader
 import kotlin.concurrent.thread
 
-class ScanActivity : BaseActivity(), IScanView.Proxy {
+class ScanActivity : BaseActivity(), IScanView.Proxy, PermissionAlertDialogFragment.BtnListener {
 
-    private val REQUEST_CAMERA_PERMISSION = 0
     private val EXIT_TIME = 2000
     private lateinit var mPresenter: ScanPresenter
     private lateinit var sp: SharedPreferences
@@ -62,24 +63,25 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
             Log.i(TAG, "loading opencv error, exit")
             finish()
         }
+//        if (ContextCompat.checkSelfPermission(
+//                this,
+//                android.Manifest.permission.CAMERA
+//            ) != PackageManager.PERMISSION_GRANTED &&
+//            ContextCompat.checkSelfPermission(
+//                this,
+//                android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+//            ) != PackageManager.PERMISSION_GRANTED
+//        ) {
+//            ActivityCompat.requestPermissions(
+//                this,
+//                arrayOf(
+//                    android.Manifest.permission.CAMERA,
+//                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+//                ),
+//                REQUEST_CAMERA_PERMISSION
+//            )
+//        }
         if (ContextCompat.checkSelfPermission(
-                this,
-                android.Manifest.permission.CAMERA
-            ) != PackageManager.PERMISSION_GRANTED &&
-            ContextCompat.checkSelfPermission(
-                this,
-                android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(
-                    android.Manifest.permission.CAMERA,
-                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-                ),
-                REQUEST_CAMERA_PERMISSION
-            )
-        } else if (ContextCompat.checkSelfPermission(
                 this,
                 android.Manifest.permission.CAMERA
             ) != PackageManager.PERMISSION_GRANTED
@@ -89,17 +91,18 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
                 arrayOf(android.Manifest.permission.CAMERA),
                 REQUEST_CAMERA_PERMISSION
             )
-        } else if (ContextCompat.checkSelfPermission(
-                this,
-                android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                REQUEST_CAMERA_PERMISSION
-            )
         }
+//        else if (ContextCompat.checkSelfPermission(
+//                this,
+//                android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+//            ) != PackageManager.PERMISSION_GRANTED
+//        ) {
+//            ActivityCompat.requestPermissions(
+//                this,
+//                arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE),
+//                REQUEST_READ_GALLERY_PERMISSION
+//            )
+//        }
 
         setBtnListener()
     }
@@ -129,6 +132,24 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
             val editor = sp.edit()
             editor.putBoolean(CAN_EDIT_IMAGES, true).apply()
         }
+    }
+
+    override fun onDecisionClick() {
+        val intent = Intent()
+        intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+        val packageName = packageName ?: ""
+        val uri = Uri.fromParts(
+            "package",
+            packageName,
+            null
+        )
+        intent.data = uri
+        startActivity(intent)
+        finish()
+    }
+
+    override fun onCancelClick() {
+        finish()
     }
 
     fun setSlider(max: Int?) {
@@ -246,39 +267,48 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
         grantResults: IntArray
     ) {
 
-        var allGranted = false
-        var indexPermission = -1
-
-        if (requestCode == REQUEST_CAMERA_PERMISSION) {
-            if (grantResults.count() == 1) {
-                if (permissions.indexOf(android.Manifest.permission.CAMERA) >= 0) {
-                    indexPermission = permissions.indexOf(android.Manifest.permission.CAMERA)
-                }
-                if (permissions.indexOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) >= 0) {
-                    indexPermission =
-                        permissions.indexOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                }
-                if (indexPermission >= 0 && grantResults[indexPermission] == PackageManager.PERMISSION_GRANTED) {
-                    allGranted = true
-                }
-            }
-
-            if (grantResults.count() == 2 && (
-                        grantResults[permissions.indexOf(android.Manifest.permission.CAMERA)] == PackageManager.PERMISSION_GRANTED
-                                && grantResults[permissions.indexOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)] == PackageManager.PERMISSION_GRANTED)
-            ) {
-                allGranted = true
-            }
-        }
-
-        if (allGranted) {
-            showMessage(R.string.camera_grant)
+        if (requestCode == REQUEST_CAMERA_PERMISSION
+            && (grantResults[permissions.indexOf(android.Manifest.permission.CAMERA)] == PackageManager.PERMISSION_GRANTED)) {
+//            showMessage(R.string.camera_grant)
             mPresenter.initCamera()
             mPresenter.updateCamera()
         }
+        if (requestCode == REQUEST_CAMERA_PERMISSION && (grantResults[permissions.indexOf(android.Manifest.permission.CAMERA)] == PackageManager.PERMISSION_DENIED)) {
+            val cameraPermissionDlg = PermissionAlertDialogFragment("カメラの使用が許可されていません。\n設定で許可してください。")
+            cameraPermissionDlg.show(supportFragmentManager, "TAG")
+        }
 
+//        var allGranted = false
+//        var indexPermission = -1
+//
+//        if (requestCode == REQUEST_CAMERA_PERMISSION) {
+//            if (grantResults.count() == 1) {
+//                if (permissions.indexOf(android.Manifest.permission.CAMERA) >= 0) {
+//                    indexPermission = permissions.indexOf(android.Manifest.permission.CAMERA)
+//                }
+//                if (permissions.indexOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) >= 0) {
+//                    indexPermission =
+//                        permissions.indexOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+//                }
+//                if (indexPermission >= 0 && grantResults[indexPermission] == PackageManager.PERMISSION_GRANTED) {
+//                    allGranted = true
+//                }
+//            }
+//
+//            if (grantResults.count() == 2 && (
+//                        grantResults[permissions.indexOf(android.Manifest.permission.CAMERA)] == PackageManager.PERMISSION_GRANTED
+//                                && grantResults[permissions.indexOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)] == PackageManager.PERMISSION_GRANTED)
+//            ) {
+//                allGranted = true
+//            }
+//        }
+//
+//        if (allGranted) {
+//            showMessage(R.string.camera_grant)
+//            mPresenter.initCamera()
+//            mPresenter.updateCamera()
+//        }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
     }
 
     override fun getDisplay(): Display = windowManager.defaultDisplay

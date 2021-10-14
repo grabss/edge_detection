@@ -11,6 +11,7 @@ const val SCALE_SIZE = 1280
 const val ID = "ID"
 const val SHOULD_UPLOAD = "shouldUpload"
 const val REQUEST_GALLERY_TAKE = 1
+const val REQUEST_CAMERA_PERMISSION = 0
 
 abstract class BaseActivity : AppCompatActivity() {
 

@@ -10,7 +10,6 @@
     <string name="black">Black White</string>
     <string name="reset">Reset</string>
     <string name="scan">Scanning</string>
-
     <string name="next">Next</string>
     <string name="done">Done</string>
     <string name="complete">完了</string>
@@ -19,6 +18,8 @@
     <string name="rotate">回転</string>
     <string name="cancel">キャンセル</string>
     <string name="decision">決定</string>
+    <string name="back">戻る</string>
+    <string name="setting">設定</string>
     <string name="contrast">コントラスト</string>
     <string name="sort">順番</string>
     <string name="description_zoom_touch_close">サムネイルの拡大画像</string>
@@ -26,4 +27,5 @@
     <string name="confirm_delete">削除してよろしいですか</string>
     <string name="max_count_desc">50枚まで撮影できます</string>
     <string name="reached_max_count">いちどに撮影できる上限に達しています</string>
+    <string name="camera_permission_alert">カメラの使用が許可されていません。\n設定で許可してください。</string>
 </resources>
